@@ -2,7 +2,7 @@
 
 ### Requirement: Jump navigation opens only web pages
 
-When JavaScript runs, a jump-navigation control SHALL open the selected option only if its value resolves to an `http:` or `https:` URL. Option values are server-rendered, site-relative paths, so a rejected value can occur only if someone changes the page.
+When JavaScript is enabled, a jump-navigation control SHALL open the selected option only if its value resolves to an `http:` or `https:` URL.
 
 #### Scenario: Script destination is selected
 

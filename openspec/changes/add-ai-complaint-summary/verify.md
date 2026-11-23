@@ -15,6 +15,6 @@ These tests describe the code before the open website tasks in tasks.md (labelle
 
 ### Final validation
 
-Pending task "Final validation" in tasks.md. When it is done, record here, for both repositories (policeconduct.org and intake): repository, branch, full commit SHA, Node version from `mise.toml`, the `npm ci` lockfile check, the command (`npm run validate`), its exit code, each stage outcome, test counts, skipped tests with their reason, and the warning dispositions.
+Pending task "Final validation" in tasks.md. When it is done, record here, for both repositories (policeconduct.org and intake): repository, branch, full commit SHA, Node version from `mise.toml`, the `npm ci` lockfile check, the full validation command for that repository (`npm run validate` in policeconduct.org), its exit code, each stage outcome, test counts, skipped tests with their reason, and the warning dispositions.
 
 Real source content stays private in the retained intake workspace.

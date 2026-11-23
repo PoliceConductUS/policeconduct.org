@@ -10,13 +10,20 @@ Scope approved October 5, 2026: add agency-specific roster counts linking to the
 
 No schema, routing identity, discipline record fields, or attribution rules change. Tests use rollback-only fixtures for data verification and rendered component fixtures for visible counts.
 
+Superseded: owner decision Q29 changed the roster count to any source; see task 4.6 below.
+
 ## Review round 1 follow-up work
 
 These steps come from the owner decisions of 2026-11-18/19. Each matches a task in `tasks.md`, which holds the file paths and pass criteria.
 
-- [ ] Task 4.3: after the intake change adds the explicit license-action table, read emphasis from it, fail the build on an unclassified value, label emphasized entries "License Action", and delete the site regexes.
-- [ ] Task 4.5 / 6.1: load each roster row's license from its own `agency_personnel.license_id`; show none when it is null.
-- [ ] Task 4.6: count roster discipline by `discipline.personnel_id` (any source); keep the agency total on explicit links; update `tests/e2e/agency-discipline.spec.ts`.
-- [ ] Task 5.5: green status pill only for "Active", neutral for every other status; add the rule to `DESIGN.md`.
-- [ ] Task 7.4: add the licensing unit and fixture tests.
+- [ ] Task 4.2: show license values as stored (no trimming, no `?? ""` fallbacks); id tie-breakers; throw on an unparseable `action_date`.
+- [x] Task 4.3a: the site regexes and the "Adverse action" flag are deleted (site-decisions code change).
+- [ ] Task 4.3b (Phase 2, blocked on intake `supply-site-display-data` tasks 3.1-3.3): read the action type through `license_action.license_action_type_id`; show its name and category under "License Action"; emphasize the `discipline` category.
+- [ ] Task 4.5 / 6.1: load each roster row's license from its own `agency_personnel.license_id`; show none when it is null; fail on a dangling link.
+- [ ] Task 4.6: render the roster label from the any-source count the filter reads; drop the link-based roster count; fail on a roster row with no `personnel` row; update `tests/e2e/agency-discipline.spec.ts` and `tests/e2e/personnel-post-data.spec.ts`.
+- [ ] Task 4.7 (Phase 2, blocked on intake `supply-site-display-data` task 6.3a): read both discipline counts from `site_personnel_count` and `site_agency_count`; delete the loader count queries.
+- [ ] Task 4.8: agency total label reads "tied to jobs at this agency".
+- [ ] Task 5.5a: neutral license status pill; green moves to the unused `.personnel-status-pill--active` modifier; add the rule to `DESIGN.md`.
+- [ ] Task 5.5b (Phase 2, blocked on an intake fact not yet proposed): apply the active modifier from intake data.
+- [ ] Task 7.4: add `tests/e2e/personnel-licensing.spec.ts`.
 - [ ] Tasks 7.2 and 7.3: build, check subjects chosen by query, run `npm run audit:a11y`, and record the evidence in `verify.md`.

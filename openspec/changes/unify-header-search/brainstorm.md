@@ -1,9 +1,8 @@
 ## Design Summary
 
-This brainstorm records the owner's answers to the four open questions from
-the round-1 review (`.egm-reviews/unify-header-search-resolution1.md`, E1-E4).
-The answers are in `.egm-reviews/owner-decisions-round1.md` (Q44-Q47, dated
-2026-11-18/19). The earlier decisions of 2026-11-18 are in
+This brainstorm records the owner's answers (Q44-Q48, given 2026-11-19) to
+the open questions from the round-1 review of this change. The earlier
+decisions of 2026-11-18 are in
 [`paginate-long-lists/brainstorm.md`](../paginate-long-lists/brainstorm.md), "A
 site-wide header search is a separate backlog change": no people, and a state
 filter only.

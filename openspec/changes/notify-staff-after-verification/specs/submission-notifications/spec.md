@@ -31,8 +31,15 @@ The system SHALL notify staff about a form submission only after the submitter c
 
 - **WHEN** storing the `in_review` status fails while the submitter confirms the email address
 - **THEN** the verification record is not marked used
-- **AND** the submitter can open the same link again
-- **AND** when that retry succeeds, staff are notified as in "The submitter confirms the email address"
+- **AND** a second request with the same link, before the link expires, does not return `already_used`
+- **AND** that request confirms the email address and staff are notified as in "The submitter confirms the email address"
+
+#### Scenario: Marking the verification record used fails during confirmation
+
+- **WHEN** the `in_review` status is stored and storing the used verification record fails
+- **THEN** the confirmation request fails and the forms API does not notify staff
+- **AND** the S3 event for the status object reaches the topic
+- **AND** a second request with the same link, before the link expires, stores the status again, stores the used verification record and notifies staff as in "The submitter confirms the email address"
 
 #### Scenario: No staff notice is delivered
 

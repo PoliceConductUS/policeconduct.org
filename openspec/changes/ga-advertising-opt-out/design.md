@@ -34,16 +34,20 @@ data. Each Google Analytics property must also allow it:
 | Setting                      | Where it is kept                                            | Target value               | How it is applied                                                                           |
 | ---------------------------- | ----------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------- |
 | Google Signals               | `config/analytics.json` `googleSignalsSettings.state`       | `GOOGLE_SIGNALS_ENABLED`   | `npm run analytics:apply` (policeconduct.org) or `npm run analytics:push` (section1983.org) |
-| Regional ads personalization | `config/analytics-manual.json` `regionalAdsPersonalization` | allowed in all 307 regions | Manual GA Admin setting; recorded with a new `observedAt` and source                        |
+| Regional ads personalization | `config/analytics-manual.json` `regionalAdsPersonalization` | allowed in all 307 regions | Manual GA Admin setting; recorded with a new `observedAt` and `evidence`                    |
+| Reporting identity           | `config/analytics-manual.json` `reportingIdentity`          | Device-based               | Manual GA Admin setting; recorded with `observedAt` and `evidence`                          |
 
 Property IDs: policeconduct.org 520368202; section1983.org 525032464.
 
-With both settings on, a visitor who opts in lets Google link visits to
-signed-in Google accounts (Google Signals) and use visit data for personalized
-ads. A visitor who does not opt in keeps every advertising permission denied, so
-these property settings have no effect for that visitor. The owner approved
-collecting advertising data from visitors who opt in (owner decision Q31,
-2026-11-18/19). No Google Ads account is linked, so the dialog must not promise
+Each property uses device-based reporting identity, so turning on Google Signals
+does not withhold low-count rows from the project's own reports. Signals still
+serves ads personalization for visitors who opt in.
+
+With both settings on, a visitor who opts in lets Google use visit data to
+personalize ads, and with Google Signals on, to associate visits with signed-in
+Google accounts. A visitor who does not opt in keeps every advertising permission denied, so
+these property settings have no effect for that visitor. Advertising data is
+collected only from visitors who opt in. No Google Ads account is linked, so the dialog must not promise
 ad measurement or conversion tracking.
 
 Permissions requested: analytics_storage for Analytics cookies; ad_storage,
@@ -52,25 +56,33 @@ personalization use these three permissions. No other permission is requested.
 
 ## Selling and sharing
 
-Owner decision (2026-11-22): PoliceConduct.org does not sell personal information and does not share it with other companies for their own use. The site uses outside services, such as Google Analytics, that may collect information about a visitor depending on the visitor's cookie choices and actions, and those companies may sell or share it under their own policies. The privacy and cookie notices say exactly this (tasks.md, Notices item 5). They no longer promise that no selling or sharing happens anywhere.
+PoliceConduct.org does not sell or actively share personal information. The site uses outside services, such as Google Analytics, that may collect information about a visitor depending on the visitor's cookie choices and actions, and those companies may sell or share it under their own policies. The privacy and cookie notices say exactly this (tasks.md, Notices, remaining edits, item 6). They no longer promise that no selling or sharing happens anywhere.
+
+A Global Privacy Control (GPC) signal is treated as an opt-out of sharing for
+advertising: Advertising stays off, overrides a saved opt-in and cannot be
+turned on; GPC does not turn off analytics (tasks.md, Global Privacy Control).
+Visitors can also opt out with the Advertising choice in Your privacy choices,
+or with the footer link "Do Not Sell or Share My Personal Information", which
+opens the request form with the opt-out preselected
+(src/layouts/SiteLayout.astro).
 
 ## Alternatives considered
 
-- Basic consent mode (load Google only after Allow all). Rejected by the board
-  on 2026-11-14: it loses all measurement from visitors who decline.
-- No advertising choice, advertising always denied. Rejected by the owner on
-  2026-11-18/19 (Q31): keep the advertising choice and make it real.
+- Basic consent mode (load Google only after Allow all). Rejected: it loses
+  all measurement from visitors who decline.
+- No advertising choice, advertising always denied. Rejected: visitors may
+  choose to allow advertising, and the choice must have a real effect.
 - A third-party consent tool. Rejected: it adds a dependency and an external
   script (AGENTS.md "Avoid new dependencies").
 - One combined category. Rejected: visitors can allow analytics without allowing
   advertising.
-- Allow all grants analytics only. Rejected (Q32): every control must do exactly
+- Allow all grants analytics only. Rejected: every control must do exactly
   what its label says, and "all" includes advertising.
 
 ## Risks and mitigations
 
-- Google still receives cookieless measurements after a decline. Accepted by
-  the board choice of advanced consent mode; disclosed in the dialog and the
+- Google still receives cookieless measurements after a decline. Accepted as
+  part of advanced consent mode; disclosed in the dialog and the
   privacy notice (tasks.md).
 - Choices are stored per origin. Mitigated: the router redirects the bare domain
   to www (infrastructure/bootstrap-policeconduct/functions/router.js), so
@@ -79,14 +91,28 @@ Owner decision (2026-11-22): PoliceConduct.org does not sell personal informatio
   still choose for each page, and nothing is granted by default.
 - If storage fails after an earlier choice was saved, the earlier choice could
   survive. Mitigated: the site removes the earlier saved choice (tasks.md).
-- Escape closes the dialog without saving, so it opens again on the next page.
-  Accepted: no choice means denied.
+- Escape closes the dialog without saving. With no saved choice it opens again
+  on the next page; with a saved choice that choice stays. Accepted: no choice
+  means denied.
 - Cookie removal covers \_ga, \_ga\_\*, \_gcl\_\*, \_gac and \_gac\_\*. GA4 does
   not set \_gid or \_gat\_\*.
 - Turning on Google Signals and ads personalization in a property affects only
-  visitors who opt in. Until both property settings are on, an opt-in does
-  nothing on Google's side, so the dialog text and notices must not ship ahead
-  of the property changes (tasks.md).
+  visitors who opt in.
+- Order: the dialog text and notices ship first. They describe what Google may
+  do when Advertising is on, which is true whether or not the property settings
+  are on yet. The property settings (Google Signals, regional ads
+  personalization) are turned on after the release with that text is promoted
+  to www. Until then an opt-in does nothing on Google's side.
+- Promoting a release built before this change's text: its notice says the site
+  does not use cookies for targeted advertising, but its Allow all now turns on
+  Signals and ads personalization. Accepted (breakage is fixed afterward).
+  Manual step when promoting such a release: set googleSignalsSettings.state to
+  GOOGLE_SIGNALS_DISABLED and run npm run analytics:apply, or promote a newer
+  release.
+- What Advertising does while Analytics is denied (no analytics cookies, so no
+  client ID) is not stated in the Google sources below. The dialog label
+  therefore promises only ads personalization. The deployed check for "Save
+  preferences with only Advertising checked" records what Google receives.
 
 ## Verification
 
@@ -100,4 +126,8 @@ Deployed network checks run after deployment (tasks.md).
 
 https://developers.google.com/tag-platform/security/guides/consent
 https://developers.google.com/tag-platform/security/concepts/consent-mode
-Retrieved 2026-11-14. These describe technical behavior, not legal approval.
+Retrieved 2026-11-14.
+
+Google Signals: the Google Analytics Help page on activating Google signals is
+the source for the Signals claims above. Its URL and retrieval date are added
+here before the property settings are turned on (tasks.md). These describe technical behavior, not legal approval.

@@ -2,13 +2,13 @@
 
 ### Requirement: Filter by discipline applying to personnel
 
-Agency personnel rosters SHALL retain a person when the With discipline actions checkbox is selected if any discipline record directly references that personnel ID, regardless of agency attribution. Existing name and employment-status filters SHALL continue to combine with the checkbox. Roster discipline count labels SHALL use the same rule as the checkbox. Department discipline totals SHALL retain their explicit-link attribution rule.
+Agency personnel rosters SHALL retain a person when the With discipline actions checkbox is selected if any discipline record directly references that personnel ID, regardless of agency attribution. The name filter SHALL continue to combine with the checkbox. Roster discipline counts and the agency discipline total follow the requirements below.
 
 #### Scenario: Discipline has no agency attribution
 
 - **WHEN** a roster person has a discipline record with no employment link
 - **THEN** selecting the checkbox retains that person
-- **AND** department discipline totals are unchanged
+- **AND** the agency discipline total is unchanged
 
 #### Scenario: Discipline is attributed elsewhere
 
@@ -32,8 +32,6 @@ The count SHALL link to `/personnel/{stored-slug}/#discipline`.
 
 A zero count SHALL omit the label.
 
-A roster row whose person has no stored slug SHALL show no count.
-
 #### Scenario: Discipline with no agency link
 
 - **WHEN** a roster person directly owns a discipline record with no `discipline_agency_personnel` link
@@ -52,21 +50,34 @@ A roster row whose person has no stored slug SHALL show no count.
 #### Scenario: Count matches the filter
 
 - **WHEN** the With discipline actions checkbox retains a roster row
-- **THEN** that row shows a positive count, unless the person has no stored slug
+- **THEN** that row shows a positive count
 
 #### Scenario: Zero count
 
 - **WHEN** a roster person directly owns no discipline records
 - **THEN** no count label appears on that row
 
-#### Scenario: No stored slug
+### Requirement: Roster person required
 
-- **WHEN** a roster row's person has no stored slug
-- **THEN** no count label appears on that row
+A roster row whose `agency_personnel.personnel_id` has no `personnel` row SHALL fail the build.
+
+#### Scenario: Roster person missing
+
+- **WHEN** a roster row's `agency_personnel.personnel_id` has no `personnel` row
+- **THEN** the build fails and names the assignment
+
+### Requirement: Discipline counts come from intake views
+
+The roster count SHALL come from the intake view `site_personnel_count.discipline_count` and the agency total from `site_agency_count.discipline_count`, once intake supplies them. The page loader reads them and computes nothing.
+
+#### Scenario: Intake view columns exist
+
+- **WHEN** `site_personnel_count.discipline_count` and `site_agency_count.discipline_count` exist
+- **THEN** the roster and the agency page show those values
 
 ### Requirement: Agency discipline total
 
-The agency page SHALL show the number of distinct discipline records explicitly linked through `discipline_agency_personnel → agency_personnel` to that agency's assignments, linked to its personnel roster. The total SHALL NOT be the sum of roster counts. A zero total SHALL omit the label.
+The agency page SHALL show the number of distinct discipline records explicitly linked through `discipline_agency_personnel → agency_personnel` to that agency's assignments, linked to its personnel roster. The label SHALL say the records are tied to jobs at this agency. The total SHALL NOT be the sum of roster counts. A zero total SHALL omit the label.
 
 #### Scenario: Agency total
 
@@ -78,3 +89,8 @@ The agency page SHALL show the number of distinct discipline records explicitly 
 
 - **WHEN** a roster person's discipline has no link to this agency's assignments
 - **THEN** the agency total does not include it
+
+#### Scenario: Roster counts exceed the agency total
+
+- **WHEN** a roster person owns a discipline record that is not linked to this agency's assignments
+- **THEN** their roster count includes it, the agency total does not, and the total's label says the records are tied to jobs at this agency

@@ -4,7 +4,7 @@
 
 Intake is the data-import application. It already records coverage links and their officer-at-agency assignments. The website builds agency and personnel pages from those records. Each agency and personnel page renders a `data-page-part="news"` section, hidden when it has no links, and a `template[data-template="coverage-item"]`. The website also has a separate editorial news collection. This design concerns linked source articles.
 
-The CloudFront router selects a release from the KVS pointer (`current` for production, `current:main` for bare preview, `current:<label>` for labelled previews) and serves `<release-id>/override/…` when the `o:<release-id>:<path>` marker exists, otherwise `<release-id>/build/…`. An override belongs to exactly one release and one canonical path.
+The CloudFront router selects a release from a KVS pointer (`current` for production, `current:<label>` for a PR preview) and serves `<release-id>/override<path>index.html` when the `o:<release-id>:<path>index.html` marker exists, otherwise `<release-id>/build<path>index.html`. An override belongs to exactly one release and one canonical path. Today the router also maps the bare preview host to `current:main`; `release-hosts` replaces that with a redirect to `www`.
 
 Intake owns discovery, evidence, ranking and search-position behavior. Their requirements move to an Intake change (task 7.1). This design keeps them below as context for the cross-repository contract.
 
@@ -20,7 +20,14 @@ Intake owns discovery, evidence, ranking and search-position behavior. Their req
 - **The release-api**: the `release_api` Lambda in `infrastructure/bootstrap-policeconduct/release.tf`, with operations `release-snapshot` and `publish-page`.
 - **The page publisher**: Intake `publication.ts`.
 - **Original page**: the page the build wrote at `<release-id>/build<path>index.html`. It is the daily Action's only source for a release.
+- **`o:` keys**: KVS keys. `o:<release-id>:<path>index.html` marks a published override. (Redirects are files in the build folder, not KVS keys; `atomic-sha-deploys` task 7.12 deletes the old `r:` redirect keys.)
 - **Roster**: in this design, the personnel profile paths, names, agency names, states and assignments that Daily reads from the original pages. The build uploads no roster file.
+
+## Goals and non-goals
+
+Goals: news found between builds appears on the linked personnel, agency and home pages of the current release; an ordinary build after the Intake import shows the same coverage; every form submission is saved with the release, data version and Forms API version that produced it.
+
+Non-goals: the full agency and officer sweep; Daily updates to PR previews; keeping Daily's news across a promotion before the manual import (owner decision Q11); civil-case joins and stale-case withdrawal; release-folder rules, which `atomic-sha-deploys` owns.
 
 ## Discovery and evidence
 
@@ -32,7 +39,9 @@ Search the eligible pairs in descending order of impressions using the quoted or
 
 Daily uses Google All results (`engine=google`, `tbs=qdr:w`) under `com/serpapi/landing-page-search`. Walk the ranked pairs and select at most five distinct eligible Search Console terms per America/Chicago day across all runs. The first eligible pair for a term supplies its target profile. Keep its original reported term as the history key across profiles and website releases. Distinct reported spellings remain distinct terms.
 
-Keep the term and the time of its first successful results page in private Intake state, including empty results. A new search for that term becomes eligible after 168 elapsed hours. Before each search the Action reads the SerpApi account; it searches only on a free plan with searches left this month and below the hourly limit, and otherwise stops searching for the run. A term skipped for cooldown does not use a daily slot; a term not searched because the allowance is exhausted also uses no slot. Resume an interrupted search from its checkpoint. Further result pages use provider allowance but occupy the same daily term slot. Apply these limits only to new discovery. Refresh homepage ranking from all eligible traffic and existing matches. The full roster sweep is outside this change.
+Keep the term and the time of its first successful results page in private Intake state, including empty results. A new search for that term becomes eligible after 168 elapsed hours.
+
+Before each search the Action reads the SerpApi account; it searches only on a free plan with searches left this month and below the hourly limit, and otherwise stops searching for the run. A term skipped for cooldown does not use a daily slot; a term not searched because the allowance is exhausted also uses no slot. Resume an interrupted search from its checkpoint. Further result pages use provider allowance but occupy the same daily term slot. Apply these limits only to new discovery. Refresh homepage ranking from all eligible traffic and existing matches.
 
 Limit the daily Action to the search date and the six preceding calendar dates in `America/Chicago`. Request past-week results and check the source publication date before accepting a match, including a cached result. When a story has multiple copies, use its preferred source’s publication date to check its age. A recent update or republication of an older story does not qualify it as current news.
 
@@ -62,9 +71,9 @@ This entry groups the two URL source IDs. When a release has no `alias.json` yet
 
 Daily follows URL aliases when updating saved articles and preserves their source identities across searches.
 
-Intake’s existing coverage resolver ordinarily uses normalized URL as canonical identity. Prefer explicit original-publisher attribution and then the free Common Crawl domain rank (`domainRank`). Update the preferred URL on the existing record.
+Intake’s existing coverage resolver uses normalized URL as canonical identity. Prefer explicit original-publisher attribution and then the free Common Crawl domain rank (`domainRank`). Update the preferred URL on the existing record.
 
-An article links to an officer’s assignment at an agency (`AgencyPersonnel`). Build each agency’s news list from the articles linked through its personnel assignments. Include each article once per agency. If a syndicated copy supplies the link for an assignment, that link also supplies the agency entry derived from that assignment.
+An article links to an officer’s assignment at an agency (`AgencyPersonnel`). Build each agency’s news list from the articles linked through its personnel assignments. Include each article once per agency. If a syndicated copy supplies the link for an assignment, that link also supplies the agency entry derived from that assignment. Both the roster path and the page's officer link are `/personnel/<slug>/` from the stored `personnel.slug` (`coverage.ts`), so they are the same.
 
 For an officer’s page, use a source occurrence that supports the officer’s association. If the preferred copy omits the supporting passage, link to the evidence-bearing occurrence and use that occurrence’s source metadata and full body for its entry. If corrected extraction removes the last support for an already published news association, flag the association for manual correction. Preserve associations independently supported elsewhere. If a copy overlaps two already established article IDs, retain both and report the ambiguity for resolution.
 
@@ -109,7 +118,9 @@ The [alternatives in the concept brief](brainstorm.md) explain the choice to ret
 }
 ```
 
-The page publisher supplies the targeting and template instructions. Article fields supply values for the template. Render source titles and summaries as text using the same escaping as the ordinary Astro view. News is the first consumer. The original build provides an insertion target and item markup even on a page with zero stories. Each target's saved news data covers all its applicable articles, including coverage already present in the original page. The build writes no saved page object. Daily writes the first saved object for a page when it first updates that page. Until then, the baseline is the news items rendered in the original page, read through their template hooks, including `data-source-namespace` and `data-source-id`. Page destinations refer to the same stable identities. News is the only implemented part; the object shape allows other parts later.
+The page publisher supplies the targeting and template instructions. Article fields supply values for the template. Render source titles and summaries as text using the same escaping as the ordinary Astro view. News is the first consumer. The original build provides an insertion target and item markup even on a page with zero stories. Each target's saved news data covers all its applicable articles, including coverage already present in the original page.
+
+The build writes no saved page object. Daily writes the first saved object for a page when it first updates that page. Until then, the baseline is the news items rendered in the original page, read through their template hooks, including `data-source-namespace` and `data-source-id`. Page destinations refer to the same stable identities. News is the only implemented part; the object shape allows other parts later.
 
 1. Pin the release and canonical path. Load Daily's saved page object from `builds/<release-id>/data<path>index.json`. When none exists, read the baseline from the news items in the original page.
 2. Merge Action-created articles and their relationship records using each record’s persisted namespace and source ID. Retain previously saved parts, including unrelated ones. Persist that object. Keep the targeted search at its current acquisition position until publication completes for every destination.
@@ -130,15 +141,19 @@ Search Console records organic clicks for each (personnel landing page, search t
 
 ## Forms and routing
 
+The deployed Forms API still rejects an unknown release with a 400 before saving, and the client throws when a page has no `data-release-id`. The save-and-log behavior below takes effect when task 7.4a is deployed.
+
 Each build embeds its commit-hash release ID in every form. The shared submission helper includes `releaseId` after invoking the ordinary or custom payload builder. The environment-specific Forms API keeps it in the stored submission. A form opened before deployment retains its original value. Preview and production use the same commit-hash release ID; their buckets, KVS pointers and Forms APIs keep them separate.
 
-The Forms API saves every submission. When the `releaseId` is missing or names no folder with `builds/<release-id>/build/release.json` in that environment's release-data bucket, the API still saves the submission and logs the mismatch. Every saved submission carries a field that records the Forms API version that processed it.
+The Forms API saves every submission. When the `releaseId` is missing or names no folder with `builds/<release-id>/build/release.json` in that environment's release-data bucket, the API still saves the submission and logs the mismatch. When the release lookup itself fails (an S3 error other than not-found), the API saves the submission and logs `forms.submit.release_lookup_failed` with the error. A missing `RELEASE_DATA_BUCKET` still fails the request. The API logs a missing or unknown release as `forms.submit.release_mismatch`, with the `releaseId` or `null` when it is missing.
 
-Each page also carries the data version it was built from in `data-data-version` on `<html>` (see `atomic-sha-deploys` design.md "Data version"). The shared submission helper sends it as `dataVersion` beside `releaseId`, and the Forms API stores it with the submission. When `dataVersion` is missing, the API still saves the submission and logs the mismatch. The API does not check the value against a list, because no list of data versions exists.
+Every saved record carries `formsApiVersion` at its top level: the full Git commit the Lambda was deployed from (owner decision, 2026-11-22). Terraform sets the Lambda's `FORMS_API_VERSION` environment variable from the variable `forms_api_version`, which `scripts/apply.sh` supplies. A missing `FORMS_API_VERSION` fails the request before saving.
+
+Once `atomic-sha-deploys` task 2.2 lands, each page carries the data version it was built from in `data-data-version` on `<html>` (see `atomic-sha-deploys` design.md "Data version"). The shared submission helper sends it as `dataVersion` beside `releaseId` (task 7.4b), and the Forms API stores it in `payload` beside `releaseId`, as sent. When `dataVersion` is missing, the API still saves the submission and logs `forms.submit.data_version_missing`. The API does not check the value against a list, because no list of data versions exists.
 
 The release-api and the public router must agree on which release the production host serves. The API returns that release ID together with the location of its build artifacts. It returns no roster. For a request within a selected release, route to the full override when published for that path and otherwise use the original. Refresh the canonical page on first publication and on subsequent override changes, including when the previously cached response came from the original. Preserve separate production and preview routing. Production stays on the selected release throughout publication.
 
-The daily Action publishes to the selected production release. Its evidence is shared across releases (see the storage table). Daily publishes only to production. The bare preview host serves the same commit's original pages without Daily's updates.
+The daily Action publishes to the selected production release. Its evidence is shared across releases (see the storage table). PR previews serve their own build's original pages without Daily's updates.
 
 ## Release API and page-object contract
 
@@ -164,9 +179,11 @@ This section is the cross-repository contract between the website and Intake.
 
 ## Deployment folders
 
-Build and deploy scripts require a clean repository and use its full current Git commit hash. Upload rejects an artifact from another commit. Promotion requires an explicit folder argument. A folder without `builds/<folder>/build/release.json`, such as the migration folder `prod-temp` or any folder uploaded before the storage split, cannot be promoted. Hosting uses `<release-id>/build/` and `<release-id>/override/`; existing private records stay in private release storage. Build source metadata records the branch and commit and participates in the completion inventory. Only main builds can upload to the production site bucket. PR builds upload to preview. Main deployment also uploads to preview and selects `current:main`, which serves the bare preview host with the preview API and noindex response headers. The release-hosts proposal in PR #58 replaces the bare preview host with a redirect to `www`.
+Build and deploy scripts require a clean repository and use its full current Git commit hash. Upload rejects an artifact from another commit. Promotion requires an explicit folder argument. A folder without `builds/<folder>/build/release.json`, such as the cutover placeholder folder or any folder uploaded before the storage split, cannot be promoted. Hosting uses `<release-id>/build/` and `<release-id>/override/`; existing private records stay in private release storage. Build source metadata records the branch and commit and participates in the completion inventory. Only main builds can upload to the production site bucket. PR builds upload to preview. Today a main deployment also copies the build to the preview site bucket and selects `current:main` for the bare preview host. `release-hosts` (tasks 1.2, 3.2 and 9.4) removes that copy and makes the bare preview host redirect to `www`, and `atomic-sha-deploys` task 3.1 removes `PREVIEW_NAME`.
 
-Promotion checks the release-completion marker (`builds/<release-id>/build/release.json`) and `build/index.html`, selects the existing KVS pointer and invalidates CloudFront. Promotion writes no redirect keys. Each release serves redirects from its own redirect files (`atomic-sha-deploys`, "Redirect files"). Release folders are kept forever. Only PR preview folders are deleted, when the PR closes. Closing a PR removes its host pointer and deletes its preview folder unless another preview pointer still selects that folder.
+A rebuild of the same commit goes to the same folder (owner decision Q4). It replaces `<release-id>/build/` and `builds/<release-id>/build/` and leaves `<release-id>/override/`, `builds/<release-id>/data/` and the `o:<release-id>:` keys untouched (see "Build and daily storage").
+
+Promotion checks the release-completion marker (`builds/<release-id>/build/release.json`) and `build/index.html`, selects the existing KVS pointer and invalidates CloudFront. Promotion writes no redirect keys. Each release serves redirects from its own redirect files (`atomic-sha-deploys`, "Redirect files"). Release folders are kept forever (owner decision Q7). Closing a PR removes its host pointer and its preview folder unless another preview pointer still selects that folder; `atomic-sha-deploys` tasks 4.1 and 4.2 implement this.
 
 ### Production cutover status
 
@@ -177,29 +194,30 @@ Production already serves through the `current` pointer. After the `bootstrap-po
 - the site bucket policy that grants only `*/build/*`, `*/override/*` and `404.html`;
 - the Forms API that checks `releaseId`.
 
-The owner's cutover plan copies the whole bucket content into a placeholder or commit folder first, so that folder is `current` as soon as Terraform applies. Task 6.4 confirms which folder `current` names, builds and promotes a main release, probes the routes and removes the legacy root objects. Rollback is promoting the previous release folder when it has a `release.json`. A folder from before the storage split cannot be promoted, so it is no rollback target.
+Following owner decision Q10, the bucket's previous root content was copied into the cutover placeholder folder so that it became `current` when Terraform applied; `www` returning 200 shows the router found `<folder>/build/index.html`. Task 6.4 step (1) records the folder's name and what it holds. Task 6.4 then builds and promotes a main release, probes the routes and removes the legacy root objects. The cutover placeholder folder predates the storage split and has no `release.json`, so it cannot be promoted and is no rollback target. After task 6.4 step (2), rollback is promoting the previous main release that has a `release.json`.
 
 ## Alternatives considered
 
 - **Google All versus the News tab.** The News tab returned no links in the pilot (verify.md, "Five daily terms and the seven-day wait").
-- **Five terms and 168 hours.** These keep discovery within the SerpApi free plan.
-- **A 0.30 overlap.** Three of ten paragraphs count as a copy and two of ten do not.
-- **KVS markers versus Lambda@Edge, an S3 existence check or origin failover.** KVS markers add no origin round trip.
-- **Common Crawl rank.** It is free and needs no account.
-- **A commit-hash release ID.** One deploy command uploads to `<site bucket>/<commit>/build/`.
+- **Five terms and 168 hours versus more terms or a shorter wait.** More terms, or repeating a term sooner, would use up the SerpApi free plan's searches sooner and would need a paid plan.
+- **A 0.30 overlap versus 0.2 or 0.5.** At 0.2, two shared paragraphs out of ten (for example a shared quote and a stock closing paragraph) would merge two different stories. At 0.5, a copy that trims or rewrites half of the story would become a second article.
+- **KVS markers versus Lambda@Edge, an S3 existence check or origin failover.** Lambda@Edge adds a paid function call on every request and deploys more slowly. An S3 existence check adds an origin round trip to every request. Origin failover makes every page without an override miss once at the override origin first. A KVS marker is read inside the existing router.
+- **Common Crawl rank versus a paid domain-authority service.** A paid service costs money and needs an account and a key. Common Crawl rank is free.
+- **A commit-hash release ID versus a versioned ID (commit plus build number).** A versioned ID would give a commit more than one folder. Owner decision Q4 rejects that: a rebuild goes to the same `<commit>` folder, and release hosts address a release by its commit.
 
 ## Risks and limits
 
 - **False officer links.** Mitigated by exact roster-name matching plus inference. Corrections are flagged.
-- **SerpApi cost.** Bounded by the account check.
-- **KVS capacity.** `o:` keys accumulate per release against 5 MB. Release folders are kept forever, so `o:` key growth has no automatic limit. Redirects are files, not keys (`atomic-sha-deploys`).
-- **ETag contention.** `promote.sh` and `publish-page` both update keys and retry on conflict.
+- **SerpApi cost.** Searches stop for the run when the free plan's searches are used up. Terms are skipped until the allowance resets, so a day can search fewer than five terms.
+- **KVS capacity.** Redirects are files in each release's build folder, not KVS keys (owner decision, 2026-11-22; `atomic-sha-deploys` "Redirect files"), so promotion adds no keys. Only `o:` keys accumulate, one per published override path per release, against the 5 MB store limit. Keys are not pruned (owner decision, 2026-11-22), because release hosts serve every kept release with its own overrides. If the store fills, `publish-page` writes fail.
+- **ETag contention.** `promote.sh` and `publish-page` each make one conditional KVS update and fail on a conflict; neither retries. A failed promotion must be rerun; `current` is unchanged. Until `atomic-sha-deploys` task 7.5 lands, a failed promotion has already loaded the release's `r:` keys and replaced the root `404.html`. A failed `publish-page` throws, and the next daily run replays every destination from the source checkpoint.
 - **IAM reach.** The `intake_news` role can write `*/override/*` in any folder, but `publish-page` marks only `current`.
-- **Invalidation volume.** At most five paths per page and five terms per day.
+- **Invalidation volume.** Each published page invalidates at most five paths. A term's article publishes to every profile and agency page it supports and to the homepage when it ranks, and at most five terms run a day.
 - **Writer freshness.** Enforced by conditional writes and the workflow concurrency group.
 - **Shared preview 404 page.** Promoting any preview label replaces the shared preview `404.html`.
 - **Original page as the only source.** Daily can use only what the original page carries. A value the page lacks is a gap for the owner, not a new site file.
 - **Unimported news.** News the daily Action adds is lost from `www` when a newer release is promoted before the manual import (see "Release and page object").
+- **Rebuild under overrides.** A rebuild of the current commit leaves overrides and `o:` keys in place, so each overridden path keeps serving its override, rendered from the earlier build with the earlier data version. Daily's next publication to that path renders its saved news list against the rebuilt original, so news the rebuild added from the database does not show on that path unless Daily's saved list also has it. This follows from the storage split; no task here handles it.
 
 ## Review and rollout
 
@@ -216,5 +234,3 @@ Exercise daily discovery and the ordinary build. For the website, test empty and
 - Templates use `fromOriginal`.
 - Rank ties follow `release-news.ts:79-86` and `coverage.ts:142-147`.
 - The inference service works with any provider, including a local one. `NEWS_INFERENCE_URL`, `NEWS_INFERENCE_MODEL` and `NEWS_INFERENCE_API_KEY` select it through configuration; no provider is hard-wired. Task 4.2 needs these values set.
-
-This design makes no change to civil-case joins or stale-case withdrawal.

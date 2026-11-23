@@ -6,20 +6,20 @@
 
 #### Scenario: Production sitemap is listed
 
-- **WHEN** `robots.txt` has `Sitemap: https://www.policeconduct.org/sitemap-index.xml`, with any line endings and alongside other `Sitemap:` lines
+- **WHEN** `robots.txt` has `Sitemap: https://www.policeconduct.org/sitemap-index.xml`, with LF or CRLF line endings and alongside other `Sitemap:` lines
 - **THEN** the robots sitemap check passes
 
 #### Scenario: Lookalike host is listed
 
 - **WHEN** the only `Sitemap:` URL replaces the dots in the host, as in `https://wwwXpoliceconductYorg/sitemap-index.xml`
-- **THEN** the audit fails
+- **THEN** the robots sitemap check fails, so `npm run audit:seo` fails
 
 #### Scenario: Longer host is listed
 
 - **WHEN** the only `Sitemap:` URL is `https://www.policeconduct.org.example.com/sitemap-index.xml`
-- **THEN** the audit fails
+- **THEN** the robots sitemap check fails, so `npm run audit:seo` fails
 
 #### Scenario: Label is missing
 
 - **WHEN** `robots.txt` has the production sitemap URL on a line without a `Sitemap:` label
-- **THEN** the audit fails
+- **THEN** the robots sitemap check fails, so `npm run audit:seo` fails

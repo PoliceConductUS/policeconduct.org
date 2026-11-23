@@ -15,25 +15,26 @@ The board removed notification monitoring from scope (INS-94). That monitoring w
 
 ## What Changes
 
-- Delete the probe from `infrastructure/submission-notifications`: the Lambda and its source and tests, the EventBridge rule and target, the Lambda permission, the IAM role and policy, the alert topic and its subscription, and the delivery and reconciliation alarms.
-- Delete the forms API notify-failure log filters and alarms from the same root. verify.md lists all 16 Terraform addresses.
-- Remove the `notification_receipts_since` variable (the receipt cutoff) from both Terraform roots and the `NOTIFICATION_RECEIPTS_SINCE` setting from both forms API Lambdas.
-- Remove the `submissions/2` rule from both submissions buckets. The production bucket stops notifying staff when a submission is first stored; staff are notified only by the `submissions/status/` rule and the forms API after verification.
-- Delete the probe's CloudWatch log group `/aws/lambda/policeconduct-notification-canary` from `infrastructure/bootstrap-policeconduct/logs.tf`. Its log contents are deleted with it.
-- Delete the `notification-canary.zip` line from `.gitignore`; no build writes that file.
-- Remove forms API branches that only a non-verified notification event can reach. The verified-only gate stays.
+- Delete the probe from `infrastructure/submission-notifications`: the Lambda and its source and tests, the EventBridge rule and target, the Lambda permission, the IAM role and policy, the alert topic and its subscription, and the delivery and reconciliation alarms (PR #30).
+- Delete the forms API notify-failure log filters and alarms (`notify[...]`) from the same root. They are replaced by `forms_api_{prod,preview}_notify_failed` in `infrastructure/bootstrap-policeconduct` (commit `1c1bb48`), which this change keeps. verify.md lists all 16 Terraform addresses (PR #30).
+- Remove the `notification_receipts_since` variable (the receipt cutoff) from both Terraform roots and the `NOTIFICATION_RECEIPTS_SINCE` setting from both forms API Lambdas (PR #30).
+- Remove the `submissions/2` rule from both submissions buckets. The production bucket stops notifying staff when a submission is first stored; staff are notified only by the `submissions/status/` rule and the forms API after verification (PR #30).
+- Delete the probe's CloudWatch log group `/aws/lambda/policeconduct-notification-canary` from `infrastructure/bootstrap-policeconduct/logs.tf` (tasks.md section 2).
+- Delete the `notification-canary.zip` line from `.gitignore`; no build writes that file (tasks.md section 2).
+- Remove forms API branches that only a non-verified notification event can reach. The verified-only gate stays (tasks.md section 2).
 - Keep verified-submission notifications, the `submissions/status/` rule, and notification receipts.
 
 ## Alternatives
 
 - Disable the schedule and keep the code: rejected. The board asked for removal, and disabled code still needs upkeep.
-- Keep the probe's alarms without the probe: rejected. The alarms existed to report the probe's results.
-- Keep the probe's log group: rejected. The owner chose to delete everything dead or unused.
+- Keep the probe's alarms without the probe: rejected. `canary_delivery` and `submissions_without_notification` alarmed only on the probe's results, so with no probe they could never fire.
+- Keep the probe's log group: rejected. Nothing writes to it any more, and `logs.tf` keeps its contents forever (`retention_in_days = 0`), so it costs storage and serves no reader.
 
 ## Risks
 
 - The probe was the only end-to-end check. Without it, nothing reports an unconfirmed staff subscription, staff email sent to spam, or a verified submission that never produces a notification. The board removed monitoring from scope (INS-94), and this change adds nothing in its place.
 - Deleting the probe's log group deletes its old log lines for good.
+- The bootstrap apply in tasks.md section 3 is shared with every change merged in PR #58 and also deploys forms API code to production and preview at once. Running it without `scripts/apply.sh` would clear the notification topic on both forms Lambdas.
 
 ## Capabilities
 

@@ -59,8 +59,8 @@ search SHALL NOT return pages about individual people.
 
 The masthead search SHALL offer one state filter and no place or agency
 filter. When no state is chosen, results SHALL NOT be filtered by state. When
-a state is chosen, every result SHALL be a page whose state filter value is
-that state, and pages with no state SHALL NOT be in the results.
+a state is chosen, every result SHALL be a page whose state filter values
+include that state, and pages with no state SHALL NOT be in the results.
 
 #### Scenario: A visitor filters by state
 
@@ -100,12 +100,19 @@ that state, and pages with no state SHALL NOT be in the results.
 - **AND** the new result count is announced through the search status live
   region
 
+#### Scenario: Without JavaScript
+
+- **WHEN** the masthead renders without JavaScript
+- **THEN** no state label or select is shown
+- **AND** submitting the form opens `/find-records/`
+
 ### Requirement: State filter value of a page
 
 A page's state filter value SHALL come from the `location_path` record of the
 page's own record, through its `location_path_id`. A civil-case page SHALL
-take the state of every agency linked to the case through its personnel. A
-page whose record has no `location_path_id` SHALL have no state filter value.
+take the state of every agency linked to the case through its personnel. Any
+other page whose record has no `location_path_id` SHALL have no state filter
+value.
 
 #### Scenario: An agency page gets its state
 
@@ -147,3 +154,10 @@ event SHALL carry the query text or any part of it.
 - **THEN** the `search_result_selected` event carries the result count of the
   search
 - **AND** a masthead event also carries the chosen state
+
+#### Scenario: A finder search with no results
+
+- **WHEN** a `/find-records/` search has no results
+- **THEN** a `coverage_search_no_results` event is sent with `search_source`
+  `record_finder` and a result count of 0
+- **AND** the event does not contain the query text

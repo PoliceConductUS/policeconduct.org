@@ -7,7 +7,7 @@ The brainstorm took place with the owner on 2026-11-18 and 2026-11-19 (`.egm-rev
 - A **release** is a published build of a commit on `main`. It is a folder in the production site bucket. Not every `main` commit is released.
 - `<commit>.release.policeconduct.org` serves the build of that release. `<commit>` is 7 to 40 lowercase hex characters. A short SHA serves the one release whose commit starts with it. An unknown or ambiguous short SHA returns 404.
 - The release ID is the full commit. A commit rebuilt against newer data goes to the same folder, and the build records the data version it read (specified in `atomic-sha-deploys`). `<commit>.release` serves the `<commit>` folder, whatever its latest build is.
-- Releases are kept forever (owner Q7), so their release hosts keep working.
+- Releases are kept forever (`.egm-reviews/owner-decisions-round1.md`, atomic-sha-deploys Q7), so their release hosts keep working.
 - Bare `release.policeconduct.org` and bare `preview.policeconduct.org` return a 301 to `https://www.policeconduct.org` with the same path and query string, like the apex redirect. Today bare `preview.` serves the `current:main` copy of the latest production release; that ends.
 - Previews are open PRs only (`pr-<N>.preview.policeconduct.org`). A preview is not a release.
 - Only the apex and `www` may be crawled. The router already answers `/robots.txt` with deny-all on every other host (`infrastructure/bootstrap-policeconduct/functions/router.js`). That stays and covers release hosts and both bare hosts.
@@ -48,7 +48,7 @@ Option C. Release hosts are aliases of the production distribution, which alread
 - Robots: no new rule. The existing `/robots.txt` deny-all answer covers release hosts and bare hosts. Production builds already declare `www` as the canonical URL.
 - The Terraform apply runs from `main` after the PR merges, with the existing `scripts/apply.sh`. No approval gate is added.
 
-Owner answers, 2026-11-19:
+Owner answers (`.egm-reviews/owner-decisions-round1.md`, 'Release hosts (owner, 2026-11-19)'):
 
 - Forms: the production forms API accepts only the apex, `www` and `*.release.policeconduct.org` origins. The preview forms API accepts only `*.preview.policeconduct.org` origins (design.md, Decision 8).
 - Analytics and Sentry are off on release hosts, decided by the host name at runtime in the browser (design.md, Decision 9).

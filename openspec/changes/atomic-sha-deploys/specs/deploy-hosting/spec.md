@@ -1,8 +1,8 @@
 ## ADDED Requirements
 
-### Requirement: Each commit has one release folder
+### Requirement: Each commit has one build folder per bucket
 
-The system SHALL store each release in one folder named by its release ID, the full 40-character commit. A build SHALL write only the build-owned prefixes `<commit>/build/` in the site bucket and `builds/<commit>/build/` in the release data bucket. A rebuild of the same commit SHALL leave those two prefixes equal to the latest build. The build SHALL NOT upload the data it read. Each build SHALL record the data version it read.
+The system SHALL store each uploaded build, preview or release, in one folder per bucket named by its release ID, the full 40-character commit. A build SHALL write only the build-owned prefixes `<commit>/build/` in the site bucket and `builds/<commit>/build/` in the release data bucket. A rebuild of the same commit SHALL leave those two prefixes equal to the latest build. The build SHALL NOT upload the data it read. Each build SHALL record the data version it read.
 
 #### Scenario: Folder layout
 
@@ -34,10 +34,21 @@ The system SHALL store each release in one folder named by its release ID, the f
 - **AND** files the new build no longer produces are removed from those two prefixes only
 - **AND** `release.json` is uploaded last
 
+#### Scenario: PR builds stay in the preview buckets
+
+- **WHEN** a deploy runs for any environment other than `prod`
+- **THEN** it uploads only to the preview site bucket and the preview release data bucket
+
+#### Scenario: Only a main build selects `current:main`
+
+- **WHEN** a deploy that is not a `prod` deploy from `main` runs
+- **THEN** it does not write `current:main`
+- **AND** this scenario is replaced when `openspec/changes/release-hosts/` removes the `current:main` mirror
+
 #### Scenario: Data version recorded
 
 - **WHEN** a release builds
-- **THEN** the build reads the data version once: the `version` of the one row in `public.data_mutation_applied` that no row names as `previous_version`
+- **THEN** the build reads the data version once: the `version` of the newest row in `public.data_mutation_applied`, which is the one row that no row names as `previous_version`
 - **AND** every built page renders it as `data-data-version` on `<html>`, next to `data-release-id`
 - **AND** `.release/source.json` and `builds/<commit>/build/release.json` record the same value as `dataVersion`
 
@@ -61,9 +72,15 @@ A build or rebuild SHALL NOT write, delete or read `<commit>/override/` in the s
 - **THEN** every object under those two prefixes is unchanged
 - **AND** no deploy command writes, deletes or reads them
 
+#### Scenario: Rebuild of a release that has overrides
+
+- **WHEN** a commit whose release has overrides is rebuilt into its folder
+- **THEN** its `<commit>/override/` objects and `o:<commit>:` keys are unchanged
+- **AND** each overridden page keeps the `data-data-version` of the build it was rendered from
+
 ### Requirement: Promotion moves a pointer
 
-Promoting a release SHALL check that the release is complete, copy its `404.html` to the bucket root, move the host's pointer with the KVS ETag guard, and invalidate `/*`. Promotion SHALL NOT write redirect keys. Every `npm run deploy -- <environment>` SHALL promote the build it uploads, with no approval step.
+Promoting a release SHALL check that the release is complete, copy its `404.html` to the bucket root, move the host's pointer with the KVS ETag guard, and invalidate `/*`. Promotion SHALL NOT write redirect keys. Every `npm run deploy -- prod` SHALL promote the release it uploads, with no approval step. Every preview deploy SHALL point `current:pr-<N>` at its build with the same steps: completeness check, `404.html` copy, ETag-guarded pointer move and `/*` invalidation.
 
 #### Scenario: Promoting a release
 
@@ -80,7 +97,7 @@ Promoting a release SHALL check that the release is complete, copy its `404.html
 
 #### Scenario: Incomplete release
 
-- **WHEN** `builds/<release-id>/build/release.json` or `<release-id>/build/index.html` is missing
+- **WHEN** a release has never completed an upload, so `builds/<release-id>/build/release.json` or `<release-id>/build/index.html` is missing
 - **THEN** promotion stops before any pointer change
 
 #### Scenario: Release folder from before the storage split
@@ -88,6 +105,26 @@ Promoting a release SHALL check that the release is complete, copy its `404.html
 - **WHEN** a release folder was uploaded before this change and has no `builds/<release-id>/build/release.json`
 - **THEN** it cannot be promoted and gets no release host
 - **AND** no tool writes a `release.json` for it
+
+#### Scenario: Production deploy mirrors to bare preview
+
+- **WHEN** `npm run deploy -- prod` runs
+- **THEN** it uploads the same build to the preview site and preview release data buckets and points `current:main` at it before promoting `current`
+- **AND** this scenario is replaced by `openspec/changes/release-hosts/` ("Production deploys write only production resources")
+
+### Requirement: Previews are PR builds only
+
+A deploy to any environment other than `prod` SHALL require `PR_NUMBER` matching `^[1-9][0-9]*$` and SHALL use the label `pr-<PR_NUMBER>`.
+
+#### Scenario: Preview deploy without a PR number
+
+- **WHEN** `npm run deploy -- preview` runs without `PR_NUMBER`, with or without `PREVIEW_NAME`, and with or without `--skip-build`
+- **THEN** the deploy stops before building or uploading
+
+#### Scenario: Invalid PR number
+
+- **WHEN** `PR_NUMBER` is `0` or not a positive integer
+- **THEN** the deploy stops before building or uploading
 
 ### Requirement: The router serves the promoted release per host
 
@@ -109,9 +146,16 @@ The shared CloudFront router SHALL pick the release for each request from a KVS 
 - **THEN** the router uses the `current:pr-<N>` pointer
 - **AND** returns 404 when that pointer does not exist
 
+#### Scenario: Bare preview host
+
+- **WHEN** a request arrives for `preview.<domain>`
+- **THEN** the router uses the `current:main` pointer
+- **AND** returns 404 when that pointer does not exist
+- **AND** this scenario is replaced by `openspec/changes/release-hosts/` (bare `preview.` redirects to `www`)
+
 #### Scenario: Unknown host or unsafe path
 
-- **WHEN** the host matches no rule, the preview label is not `pr-<N>`, or the decoded path is reserved (`/builds/`, `/data/`, `/<id>/build/`, `/<id>/override/` and the other reserved prefixes) or contains `.` or `..` segments, `\` or `%`
+- **WHEN** the host matches no rule, the preview label is not `pr-<N>`, or the decoded path is reserved (`/builds`, `/data`, `/evidence`, `/news-discovery`, `/com/serpapi/landing-page-search`, or `/<segment>/build` or `/<segment>/override`, each followed by `/` or the end of the path) or contains `.` or `..` segments, `\` or `%`
 - **THEN** the router returns 404
 
 #### Scenario: Retired prefix
@@ -142,7 +186,7 @@ An override SHALL serve only while its release is the one a pointer names. Promo
 
 ### Requirement: Non-production hosts are not indexed
 
-The system SHALL keep search engines off every host except the apex and the canonical host.
+The system SHALL send `X-Robots-Tag: noindex, nofollow` on every preview distribution response and SHALL answer `/robots.txt` with deny-all on every host except the apex and the canonical host.
 
 #### Scenario: Preview distribution response
 
@@ -161,18 +205,24 @@ The system SHALL keep search engines off every host except the apex and the cano
 
 ### Requirement: Releases are kept and previews end with their PR
 
-Release folders and their release data SHALL never be deleted. When a PR closes, the system SHALL delete its `current:pr-<N>` pointer and, when no other preview pointer names the same release ID, its preview folder and preview release data. KVS keys for a removed preview SHALL be removed by hand.
+Release folders in the production site bucket and their production release data SHALL never be deleted. When a PR closes, the system SHALL delete its `current:pr-<N>` pointer and then every folder in the preview site bucket and every `builds/<release-id>/` in the preview release data bucket whose release ID no remaining `current*` pointer in the preview store names. KVS keys for a removed preview SHALL be removed by hand.
 
 #### Scenario: PR closes
 
-- **WHEN** a PR closes and no other preview pointer names its release ID
-- **THEN** `current:pr-<N>`, `<release-id>/` in the preview site bucket and `builds/<release-id>/` in the preview release data bucket are deleted
+- **WHEN** a PR closes
+- **THEN** `current:pr-<N>` is deleted
+- **AND** every preview site folder and preview `builds/<release-id>/` that no remaining `current*` pointer names is deleted, including the folders of the PR's earlier pushes
 - **AND** its `o:` keys stay until removed with `npm run deploy:delete -- <release-id>`
 
 #### Scenario: Shared preview folder
 
 - **WHEN** a PR closes and another preview pointer names the same release ID
-- **THEN** only `current:pr-<N>` is deleted
+- **THEN** that folder and its preview release data are kept
+
+#### Scenario: Interrupted cleanup
+
+- **WHEN** a folder delete fails and the cleanup is run again
+- **THEN** the second run deletes every folder that no pointer names
 
 #### Scenario: Removing keys of a named release
 

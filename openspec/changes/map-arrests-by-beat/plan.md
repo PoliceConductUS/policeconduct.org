@@ -1,29 +1,27 @@
 # Arrest beat maps implementation plan
 
-**Goal:** Named beat maps on personnel and agency pages only.
-**Architecture:** Acquisition emits sanitized city-published boundaries; transform writes them once per agency profile. Personnel maps use that agency boundary evidence with their own counts. One map component provides persistent labels and accessible counts. See `design.md`.
-**Tech Stack:** TypeScript, Astro, existing Leaflet, PostgreSQL JSON.
-**Spec:** specs/arrest-beat-maps/spec.md, specs/arrest-records/spec.md
+- **Goal:** Named beat maps on personnel and agency pages only.
+- **Architecture:** Intake stores arrest records, official beat polygons (`police_beat`) and the count views `arrest_coverage` and `arrest_breakdown` (intake change `import-arrest-records`). The site reads the agency scope for agency maps and one `agency_personnel` scope per personnel map, joins each beat row to its `police_beat` row through the recorded beat reference, and renders one map component with persistent labels and a count list readable without JavaScript. See `design.md`.
+- **Tech Stack:** TypeScript, Astro, existing Leaflet, PostgreSQL.
+- **Spec:** specs/arrest-beat-maps/spec.md, specs/arrest-records/spec.md
 
 ## Global constraints
 
-No private arrest points or identifiers in public output. No new dependencies or fallback contracts. Personnel maps find their agency profile only through `arrest_profile.agency_arrest_profile_id`; no matching by source or months. Keep provenance in `coverage.provenance` and keep unmapped totals. No maps on city, county, state or federal pages; no reset. No basemap: the map draws polygons on a plain background because pages make no calls to other sites.
+The website build reads arrest data only through `arrest_coverage`, `arrest_breakdown`, `police_beat` and the arrest annotations (intake `import-arrest-records` D7); publishing any other arrest-record field needs its own OpenSpec change. No new dependencies and no fallback values for missing data. The site follows recorded relationships only; no matching by source, months, names or codes, and no new arrest foreign key column. Keep not-mapped arrests in the totals. No maps on city, county, state or federal pages. No `data reset` or `supabase db reset` of the shared database without the check in tasks.md 4.1. No basemap: the map draws polygons on a plain background because pages make no calls to other sites.
 
 ## Review focus
 
-Duplicate/missing boundaries; numeric beat names; multi-person bookings; unmapped arrests; inactive beats with arrests; no-JavaScript/mobile rendering.
+Missing boundaries; numeric beat names; multi-person bookings; unmapped arrests; inactive beats with arrests; no-JavaScript/mobile rendering.
 
 ## Files
 
 Website (this repository):
 
 - Create `src/lib/data/arrest-beats.ts`, `src/components/ArrestBeatMap.astro`, `tests/e2e/arrest-beat-map.spec.ts`.
-- Modify `src/lib/data/arrest-profiles.ts`, `src/components/PersonnelArrestProfiles.astro`, `src/pages/personnel/[slug]/index.astro`, `src/pages/[category]/[administrativeArea]/[place]/[agencySlug]/index.astro`, `tests/e2e/agency-arrest-profiles.spec.ts`, `tests/e2e/personnel-arrest-profiles.spec.ts`. Follow-up tasks also modify `src/components/EGM.md` and `src/lib/data/EGM.md`.
+- Modify `src/lib/data/arrest-profiles.ts`, `src/components/PersonnelArrestProfiles.astro`, `src/pages/personnel/[slug]/index.astro`, `src/pages/[category]/[administrativeArea]/[place]/[agencySlug]/index.astro`, `tests/e2e/agency-arrest-profiles.spec.ts`, `tests/e2e/personnel-arrest-profiles.spec.ts`. Follow-up tasks also modify `src/components/EGM.md`, `src/lib/data/EGM.md`, `src/pages/personnel/[slug]/EGM.md`, `src/pages/[category]/[administrativeArea]/[place]/[agencySlug]/EGM.md` and `scripts/validate-schema-contract.mjs`.
 - Modify `openspec/specs/arrest-records/spec.md` (restore, see tasks.md 3.6).
 
-Intake (already on intake `main`; follow-up edits listed in tasks.md section 2): `sources/gov/irvingtx/arrests/beats.ts`, `enrichment.ts`, `acquire.ts`, `transform.ts`, `arrest.ts`, `test/sources/gov.irvingtx.arrests/transform.test.ts`, and a new migration adding `arrest_profile.agency_arrest_profile_id` (task 2.7).
-
-Website follow-up also modifies `scripts/validate-schema-contract.mjs` (task 3.7).
+Intake (intake repo, change `import-arrest-records`; see tasks.md section 2): the arrest tables and views, `police_beat`, beat placement in `sources/gov/irvingtx/arrests/enrichment.ts`, the agency annotation, and the transform test.
 
 ## Tasks
 

@@ -49,13 +49,20 @@ A separate build step after the full site build (`scripts/write-redirect-files.m
 
 ### Requirement: Every prior URL has an explicit disposition
 
-The coverage check SHALL read the generated redirect files (`.release/redirects.json`) and resolve each path as the router does. It SHALL require every prior sitemap URL to exist in the current sitemap, redirect directly to a terminal current route, or have an exact path and nonempty reason in `route-absences.json`. Missing intake data SHALL NOT imply permanent removal. Recorded absences permit the existing 404 response without creating redirects, pages, or 410 responses.
+The coverage check SHALL read the generated redirect files (`.release/redirects.json`) and resolve each path as the router does. It SHALL require every prior sitemap URL to be a route in the current build (in the current sitemap or a generated HTML route), redirect directly to a terminal current route, or have an exact path and nonempty reason in `route-absences.json`.
 
 #### Scenario: Personnel not populated by intake
 
 - **WHEN** a missing prior personnel URL has an explicit absence entry
 - **THEN** the coverage check passes for that URL and counts it as absent (404)
 - **AND** no return date or permanent-removal status is inferred
+
+#### Scenario: Absence entries create nothing
+
+- **WHEN** a prior URL is covered only by its `route-absences.json` entry
+- **THEN** it keeps the existing 404 response
+- **AND** no redirect, page or 410 response is created for it
+- **AND** missing intake data is not treated as permanent removal
 
 #### Scenario: Unaccounted gap
 
@@ -65,7 +72,7 @@ The coverage check SHALL read the generated redirect files (`.release/redirects.
 
 #### Scenario: Profile returns
 
-- **WHEN** a previously absent URL is present in the current sitemap
+- **WHEN** a previously absent URL is a route in the current build
 - **THEN** it counts as a current route even if its absence entry remains
 
 #### Scenario: Invalid redirect or absence list

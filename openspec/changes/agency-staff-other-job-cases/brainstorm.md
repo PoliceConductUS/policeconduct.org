@@ -2,9 +2,9 @@
 
 ## Design Summary
 
-A visitor looking at an agency wants to know whether anyone who works or worked there has been involved in a civil case. Under the civil-case count rule ([PR #58](https://github.com/PoliceConductUS/policeconduct.org/pull/58), branch `ddl-openspec`), an agency's own civil cases are only the cases tied to that agency's own `agency_personnel` rows. Cases tied to a person's assignment at another agency no longer appear on this agency's page at all. In the local data (2026-11-17), 87 agencies lose every case under that rule; all 130 of their former `civil_case_personnel` rows (links) were on an assignment at a different agency.
+Cases tied to a staff member's job at another agency no longer appear on the agency page. Under the civil-case count rule ([PR #58](https://github.com/PoliceConductUS/policeconduct.org/pull/58), branch `ddl-openspec`), an agency's own civil cases are only the cases tied to that agency's own `agency_personnel` rows. Cases tied to a person's assignment at another agency no longer appear on this agency's page at all. In the local data (2026-11-17), 87 agencies lose every case under that rule; all 130 of their former `civil_case_personnel` rows (links) were on an assignment at a different agency.
 
-The agreed design adds a second, separate view on the agency page and on the agency civil-cases page: **"Cases from staff members' other jobs"**. It lists the distinct civil cases tied to an assignment at a different agency, for people who have an assignment (current or former) at this agency. The agency's own civil-case count and list stay exactly as the count rule defines them. The two counts are never added together.
+The agreed design adds a second, separate view on the agency page and on the agency civil-cases page: **"Cases from staff members' other jobs"**. It lists the distinct civil cases tied to an assignment at a different agency, for people who have an assignment at this agency. The agency's own civil-case count and list stay exactly as the count rule defines them. The two counts are never added together.
 
 ## Alternatives Considered
 
@@ -31,20 +31,20 @@ The agreed design adds a second, separate view on the agency page and on the age
 
 ## Agreed Approach
 
-A separate section with its own count and label: the agency's own civil cases stay first and unchanged; a second section lists cases from staff members' other jobs, with the person, the agency the case is tied to, and whether the person is current or former staff here. Chosen because it answers the visitor's question while leaving the agency's own record unchanged and the count rule intact.
+A separate section with its own count and label: the agency's own civil cases stay first and unchanged; a second section lists cases from staff members' other jobs, with the person and the agency the case is tied to. Chosen because it answers the visitor's question while leaving the agency's own record unchanged and the count rule intact.
 
 ## Key Decisions
 
 - The agency's own civil-case count, tile and list are unchanged.
 - The new section has its own count; the page never shows a sum of the two.
 - A case appears in the new section only when no assignment at this agency is linked to it (those cases are already in the agency's own list).
-- Each case appears once; when several of this agency's current or former staff are linked to it through other jobs, all of them are listed on that row.
-- Each person on a row shows every agency the case is tied to for them ("while at …", person listed once) and their status at this agency from `getAssignmentStatus` (`src/lib/data/assignment-status.js`): current when any assignment here is current, otherwise former when any has ended, otherwise unknown (no status text). Rows with a current staff member come first, then all other rows; within each group, newest filed date first.
-- An agency with no own cases but some other-jobs cases gets an agency civil-cases page; the page states "0 civil cases tied to this agency's personnel records." with no own-cases table (owner decision, 2026-11-18).
-- The civil-cases page keeps one route and one page control for both lists; page N shows page N of each list; the profile's "View all" link targets the section anchor (owner decision, 2026-11-19).
-- The profile block has no extra allegation note (owner decision, 2026-11-19).
+- Each case appears once; when several people with an assignment at this agency are linked to it through other jobs, all of them are listed on that row.
+- Each person on a row shows every agency the case is tied to for them ("while at …", person listed once). Rows are ordered newest filed date first, then title. No staff status is shown: the site may not derive it, and intake does not record it per person yet.
+- An agency with no own cases but some other-jobs cases gets an agency civil-cases page; the page states "0 civil cases tied to this agency's personnel records." with no own-cases table (owner decision, 2026-11-18: "An agency with no own cases keeps the line '0 civil cases tied to this agency's personnel records.' on its civil-cases page.").
+- The civil-cases page keeps one route and one page control for both lists; page N shows page N of each list; the profile's "View all" link targets the section anchor (owner decision, 2026-11-19: one route, one pager; page N shows page N of each list; section anchor for the profile's link).
+- The profile block has no extra allegation note (owner decision, 2026-11-19: no allegation note on the profile block).
 - Copy is descriptive and at an 8th-grade level. It states that these cases are tied to the person's job at another agency, not to this agency. No claims about conduct, accuracy or verification.
-- Data comes from the same tables the count rule uses: `public.civil_case_personnel -> public.agency_personnel -> public.agency -> public.location_path`. No new tables.
+- Data comes from the same tables the count rule uses: `public.civil_case_personnel -> public.agency_personnel -> public.agency -> public.location_path`. No new tables. The site follows recorded foreign keys only (owner decision, 2026-11-22); intake's proposed view `site_agency_staff_other_civil_case` (`supply-site-display-data`) replaces the site SQL when it exists.
 
 ## Open Questions
 

@@ -13,19 +13,30 @@ measurement. Consent defaults SHALL precede tag loading.
 - **THEN** the consent default is sent before the Google tag script is requested
 - **AND** the Google tag loads whether analytics is granted or denied
 
+#### Scenario: No saved analytics grant
+
+- **WHEN** no valid choice is stored, or the stored choice denies analytics
+- **THEN** analytics_storage is denied before the Google tag loads
+- **AND** cookieless measurement remains enabled
+
 ### Requirement: Separate advertising choice
 
 ad_storage, ad_user_data and ad_personalization SHALL default to denied, and
 allow_google_signals and allow_ad_personalization_signals SHALL default to false.
 All five SHALL follow the saved advertising choice on initial load and on every
-update.
+update. A Global Privacy Control signal SHALL keep all five denied or false,
+overriding a saved advertising grant.
 
-#### Scenario: First visit or declined choice
+#### Scenario: No saved advertising grant
 
-- **WHEN** no valid accepted choice is stored
-- **THEN** analytics_storage is denied before loading the Google tag
-- **AND** ad_storage, ad_user_data and ad_personalization are denied and allow_google_signals and allow_ad_personalization_signals are false
-- **AND** cookieless measurement remains enabled
+- **WHEN** no valid choice is stored, or the stored choice denies advertising, or the browser sends a Global Privacy Control signal
+- **THEN** ad_storage, ad_user_data and ad_personalization are denied and allow_google_signals and allow_ad_personalization_signals are false in the consent default sent before the Google tag loads
+
+#### Scenario: Saved advertising grant
+
+- **GIVEN** a valid saved choice grants advertising and the browser sends no Global Privacy Control signal
+- **WHEN** a page loads
+- **THEN** the consent default sent before the Google tag loads grants ad_storage, ad_user_data and ad_personalization and sets allow_google_signals and allow_ad_personalization_signals to true
 
 ### Requirement: Consent controls do what their labels say
 
@@ -57,10 +68,21 @@ settings let Google do.
 - **AND** both choices are remembered
 - **AND** the dialog closes and focus returns to the element that had focus before the dialog opened (Your privacy choices when the visitor opened it from there)
 
+#### Scenario: Advertising description
+
+- **WHEN** the dialog is shown
+- **THEN** the Advertising description says only that Google may use visits to this site to personalize ads on other sites
+- **AND** it does not mention ad measurement or conversion tracking
+
+### Requirement: Saved choice handling
+
+The site SHALL store, read, sync and clear the choice as described below.
+
 #### Scenario: Storage unavailable
 
-- **WHEN** the browser cannot save the choice
-- **THEN** the current page applies it and explains that it could not be saved
+- **WHEN** the browser cannot store the choice
+- **THEN** the current page applies it
+- **AND** the dialog stays open and says the choice applies only to this page
 - **AND** a later visit defaults to denied
 
 #### Scenario: Saving fails after an earlier choice was saved
@@ -70,26 +92,30 @@ settings let Google do.
 - **THEN** the site removes the earlier saved choice
 - **AND** a later visit defaults to denied
 
-#### Scenario: Saving fails
-
-- **WHEN** the browser cannot store the choice
-- **THEN** the dialog stays open and shows that the choice applies only to this page
-
 #### Scenario: Visitor closes the dialog without choosing
 
+- **GIVEN** no valid choice is saved
 - **WHEN** the visitor presses Escape
 - **THEN** nothing is saved and consent stays denied
 - **AND** the dialog opens again on the next page
 
+#### Scenario: Visitor closes Your privacy choices without changing
+
+- **GIVEN** a valid choice is saved
+- **WHEN** the visitor opens Your privacy choices and presses Escape
+- **THEN** the saved choice and the applied consent are unchanged
+- **AND** the dialog does not open on the next page
+
 #### Scenario: Change in another tab
 
-- **WHEN** a saved choice changes or is cleared in another tab
-- **THEN** this tab applies the new choice, defaulting to denied when cleared
+- **WHEN** a saved choice changes in another tab
+- **THEN** this tab applies the new choice
 
 #### Scenario: Choice cleared in another tab
 
 - **WHEN** the saved choice is cleared in another tab
 - **THEN** this tab applies denied consent and opens the dialog
+- **AND** this happens also when this site removes the choice after a failed save in another tab
 
 #### Scenario: Cookies removed for denied categories
 

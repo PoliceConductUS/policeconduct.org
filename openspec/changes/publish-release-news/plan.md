@@ -31,7 +31,7 @@ Use the [design](design.md), [acceptance scenarios](specs/release-page-updates/s
 - [x] Adapt website `scripts/deploy.sh` and `scripts/promote.sh` to produce complete originals per release, including unchanged assets. Use the full commit hash as the release ID in every environment; production and preview stay separate through their own site bucket, release-data bucket, KVS and forms API.
 - [x] Connect `infrastructure/bootstrap-policeconduct/functions/router.js` and the release-api `release-snapshot` operation to the same selected release. Serve the original until an override is available and refresh the canonical path after first and later publication. Extend `scripts/cloudfront-router.test.mjs` for both hosts and previously cached responses.
 - [x] Set the private origin and access permissions in `infrastructure/bootstrap-policeconduct/release.tf` (release-data buckets, `release_api` Lambda, `intake_news` role) and the site bucket policy in `main.tf`. Test direct requests to the release’s saved page JSON and extracted body through both public hosts. Verify the release-api snapshot and import paths can still read their inputs.
-- [x] Embed the build’s release identity in forms. Include it after ordinary or custom payload construction in `src/lib/client/forms.ts`. Validate the originating release against the environment’s known releases and retain it in `infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs`. Run `npm run test:e2e` (`tests/e2e/forms-submit.spec.mjs`) and `npm run test:lambda` with an old open form after promotion and a preview at the same commit.
+- [ ] Embed the build’s release identity in forms. Include it after ordinary or custom payload construction in `src/lib/client/forms.ts`. Check the originating release against the environment’s known releases in `infrastructure/bootstrap-policeconduct/lambdas/forms-api/index.mjs`, save every submission, and log a missing or unknown release (task 7.4a). Run `npm run test:e2e` (`tests/e2e/forms-submit.spec.mjs`) and `npm run test:lambda` with an old open form after promotion and a preview at the same commit.
 
 ## 5. Search and rank from finalized traffic data
 
@@ -50,7 +50,7 @@ Use the [design](design.md), [acceptance scenarios](specs/release-page-updates/s
 
 - [x] Rehearse daily discovery and the ordinary build first. Run the scoped suites for the changed boundaries, including `node --test scripts/cloudfront-router.test.mjs` in the website, then each repository’s full `npm run validate` under its pinned runtime. Record commands, results and remaining release checks in the verification artifact.
 - [x] Prepare the Intake workflow under `.github/workflows/` for 7 a.m. daily in `America/Chicago`. Verify the schedule across daylight-saving changes and exercise discovery, full-page publication and retry against a test release with the same inputs.
-- [ ] After 6.4, run task 4.2's checklist, then set `NEWS_RELEASE_FUNCTION` to enable `.github/workflows/discover-news.yml` in Intake.
+- [ ] After 6.4 and the Forms API apply (tasks.md order, steps 6-8), run task 4.2's checklist, then set `NEWS_RELEASE_FUNCTION` to enable `.github/workflows/discover-news.yml` in Intake.
 
 ## 8. Publisher URL identities
 
@@ -60,30 +60,33 @@ Use the [design](design.md), [acceptance scenarios](specs/release-page-updates/s
 
 ## 9. Deployment folders and cutover
 
-Sections 8 and 9 follow 7 to keep the existing numbering.
+Plan sections are numbered by build order, not task number: plan 8 covers tasks 5.x, plan 9 covers tasks 6.x, and plan 10 covers tasks 7.x.
 
 - [x] 6.1: `scripts/build-release.mjs`, `scripts/release-files.mjs` and `scripts/upload-release.sh` use the full commit and reject dirty or foreign uploads. Tested by `scripts/deploy-release-guard.test.mjs`.
-- [x] 6.2: `scripts/manage-release.mjs`, `scripts/promote.sh` and `scripts/cleanup-preview.mjs` give main-only site uploads, `current:main`, `/*` invalidation and live-folder protection. Tested by `scripts/manage-release.test.mjs` and `scripts/cloudfront-router.test.mjs`.
+- [x] 6.2: `scripts/release-files.mjs` (main-only site uploads), `scripts/upload-release.sh` (`current:main`) and `scripts/promote.sh` (`/*` invalidation). Tested by `scripts/deploy-release-guard.test.mjs`, `scripts/manage-release.test.mjs` and `scripts/cloudfront-router.test.mjs`.
 - [ ] 6.3: validate the final `ddl-openspec` head as listed in tasks.md 6.3.
 - [ ] 6.4: finish the cutover in the order listed in tasks.md 6.4. The 2026-11-18 `bootstrap-policeconduct` apply from `main` already put the release-data buckets, release-api, `intake_news` role, the router that reads `current`, the `*/build/*`/`*/override/*`/`404.html` bucket policy and the `releaseId`-checking Forms API in production; `www` returned 200 through `current`.
 
 Probe URL table (step 3 of 6.4). `<id>` is the folder `current` names.
 
-| Host                                | Path                                        | Expected                                             |
-| ----------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
-| `https://policeconduct.org`         | `/`                                         | 200, `data-release-id="<id>"`                        |
-| `https://policeconduct.org`         | a personnel profile from the roster         | 200                                                  |
-| `https://policeconduct.org`         | a retired path in `.release/redirects.json` | 301 to its target, no `x-amz-meta-redirect-location` |
-| `https://policeconduct.org`         | `/builds/<id>/data/dynamic.json`            | 404                                                  |
-| `https://policeconduct.org`         | `/builds/<id>/build/release.json`           | 404                                                  |
-| `https://policeconduct.org`         | `/<id>/build/index.html`                    | 404                                                  |
-| `https://policeconduct.org`         | `/<id>/override/index.html`                 | 404                                                  |
-| `https://policeconduct.org`         | `/com/serpapi/landing-page-search/`         | 404                                                  |
-| `https://policeconduct.org`         | a path that does not exist                  | 404 with the site 404 page                           |
-| `https://preview.policeconduct.org` | the same private paths                      | 404                                                  |
+| Host                                                    | Path                                                   | Expected                                             |
+| ------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------- |
+| `https://policeconduct.org`                             | `/`                                                    | 200, `data-release-id="<id>"`                        |
+| `https://policeconduct.org`                             | a personnel profile from the roster                    | 200                                                  |
+| `https://policeconduct.org`                             | a retired path in `.release/redirects.json`            | 301 to its target, no `x-amz-meta-redirect-location` |
+| `https://policeconduct.org`                             | `/builds/<id>/data/dynamic.json`                       | 404                                                  |
+| `https://policeconduct.org`                             | `/builds/<id>/build/release.json`                      | 404                                                  |
+| `https://policeconduct.org`                             | `/data/`                                               | 404                                                  |
+| `https://policeconduct.org`                             | `/<id>/build/index.html`                               | 404                                                  |
+| `https://policeconduct.org`                             | `/<id>/override/index.html`                            | 404                                                  |
+| `https://policeconduct.org`                             | `/com/serpapi/landing-page-search/`                    | 404                                                  |
+| `https://policeconduct.org`                             | a path that does not exist                             | 404 with the site 404 page                           |
+| `https://<id>.release.policeconduct.org`                | the same private paths                                 | 404                                                  |
+| `https://pr-<N>.preview.policeconduct.org` (an open PR) | the same private paths, with that preview's release ID | 404                                                  |
+| `https://preview.policeconduct.org`                     | `/`                                                    | 301 to `https://www.policeconduct.org/`              |
 
-Legacy-prefix allow-list (step 4 of 6.4). Delete only root objects written by the old root-served layout: root-level files other than `/404.html`, and root-level folders that are not release folders (a full commit hash or the cutover placeholder folder). Record the exact list from `aws s3 ls s3://<site bucket>/` in verify.md before deleting. Never delete `/404.html`, any `*/build/` or `*/override/` prefix, or any release folder.
+Legacy-prefix allow-list (step 4 of 6.4). Delete only root objects written by the old root-served layout: root-level files other than `/404.html`, and root-level folders that are not release folders (a full commit hash or the cutover placeholder folder recorded in task 6.4 step (1)). Record the exact list from `aws s3 ls s3://<site bucket>/` in verify.md before deleting. Never delete `/404.html`, any `*/build/` or `*/override/` prefix, or any release folder.
 
 ## 10. Work outside this change folder
 
-- [ ] Tasks 7.1–7.13 in tasks.md: the Intake news-discovery change, the `atomic-sha-deploys` superseded note, the README key paths, Forms API mismatch handling, the `dataVersion` field and the Forms API version field, the same-commit upload guard, the `main` preview-name check, roster-path officer links, keeping release folders, the final-head verification record, the release API snapshot without a roster, the Forms API check on `builds/<release-id>/build/release.json`, the `intake_news` IAM split, and the Intake daily job reading only the original page (Intake work). Deploy-side tasks (stop uploading data, upload `release.json` last, `promote.sh`) are `atomic-sha-deploys` tasks 2.3, 2.4, 2.6 and 2.7.
+- [ ] Tasks in tasks.md section 7 that remain open, in the order given there: the Intake news-discovery change (7.1), the README override-key sentence (7.3), saving every submission with the Forms API version (7.4a), the `dataVersion` field (7.4b), the final-head verification record (7.9), the release API snapshot without a roster (7.10), the Forms API check on `builds/<release-id>/build/release.json` (7.11), the `intake_news` IAM split (7.12), the Intake daily job reading only the original page (7.13, Intake work) and the `atomic-sha-deploys` 6.6 check (7.14). 7.2 is done; 7.5–7.8 were withdrawn. Deploy-side tasks (stop uploading data, upload `release.json` last, `promote.sh`) are `atomic-sha-deploys` tasks 2.3, 2.4, 2.6 and 2.7.

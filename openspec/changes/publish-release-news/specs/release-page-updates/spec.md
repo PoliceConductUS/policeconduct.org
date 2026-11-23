@@ -18,7 +18,7 @@ The publisher SHALL merge new data into the selected release's saved object, app
 #### Scenario: News appears in a previously empty section
 
 - **WHEN** the selected release's original news section has no stories and a qualifying article is added
-- **THEN** the resulting page renders the article once at the intended location
+- **THEN** the resulting page shows the previously hidden news section and renders the article once at the intended location
 
 #### Scenario: A better copy appears
 
@@ -117,6 +117,11 @@ The website SHALL embed its release identity in each built form and submit it as
 - **WHEN** a form on a page that has no `data-data-version` submits
 - **THEN** the submission is sent and saved without a `dataVersion`, the Forms API logs the mismatch, and the stored record carries the Forms API version that processed it
 
+#### Scenario: The release lookup fails
+
+- **WHEN** the Forms API cannot read the release-data bucket for a reason other than a missing object
+- **THEN** it saves the submission, logs the failed lookup, and the stored record carries the Forms API version that processed it
+
 #### Scenario: A form from the current release submits
 
 - **WHEN** a form whose `releaseId` names a known release submits
@@ -135,11 +140,6 @@ The release-api `publish-page` operation SHALL write an `o:` marker and invalida
 
 - **WHEN** `publish-page` is called and `<release-id>/override<path>index.html` does not exist
 - **THEN** no `o:` marker is written
-
-#### Scenario: The first article fills a hidden news section
-
-- **WHEN** the first article is inserted into a hidden empty news section
-- **THEN** the published page shows the section
 
 ### Requirement: Serve the override when present
 
@@ -171,26 +171,26 @@ Publishing an override SHALL make the next request for that canonical path retur
 
 ### Requirement: Publish to one release
 
-The daily Action SHALL publish every destination of a run to the release it pinned.
+The daily Action SHALL publish every destination of a run to the release it pinned. When its pinned release is no longer `current`, the daily Action SHALL re-pin to `current`.
 
 #### Scenario: Promotion changes `current` during a run
 
 - **WHEN** promotion changes `current` while the daily Action is publishing
-- **THEN** `publish-page` rejects the old release and nothing is written to the new one
-
-### Requirement: Keep Action-created news across releases
-
-News the daily Action adds SHALL be durable only after the manual `workspace:pull` and Intake import. When its pinned release is no longer `current`, the daily Action SHALL re-pin to `current`.
-
-#### Scenario: Main is promoted before the import
-
-- **WHEN** a newer release is promoted before the daily Action's news is imported into the database
-- **THEN** the newer release shows only the coverage in its original pages, and the news returns in a release built after the import
+- **THEN** `publish-page` rejects the old release, and that run writes no marker for the new release
 
 #### Scenario: The pinned release is no longer current
 
 - **WHEN** the source checkpoint is pinned to a release that is no longer `current`
 - **THEN** the daily Action closes that checkpoint, re-pins to `current` and re-derives its destinations from the new release
+
+### Requirement: Action-created news lasts until the next release
+
+News the daily Action adds SHALL stay only in the private page data of the release it was published to until the manual `workspace:pull` and Intake import.
+
+#### Scenario: Main is promoted before the import
+
+- **WHEN** a newer release is promoted before the daily Action's news is imported into the database
+- **THEN** the newer release's original pages show only the coverage in its build, and the news returns in a release built after the import
 
 ### Requirement: Replay all destinations
 

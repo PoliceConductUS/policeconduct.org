@@ -1,3 +1,81 @@
+## MODIFIED Requirements
+
+### Requirement: The router serves the promoted release per host
+
+The shared CloudFront router SHALL pick the release for the apex, the canonical host and `pr-<N>.preview.<domain>` from that host's KVS pointer. For `<commit>.release.<domain>` it SHALL pick the release from `release:<prefix>` keys. It SHALL keep the release folder out of the viewer URL. Redirects SHALL follow `shared-redirects` semantics, served from the release's own redirect files. The router SHALL NOT read `r:` keys.
+
+#### Scenario: Canonical host
+
+- **WHEN** a request arrives for the canonical host
+- **THEN** the router serves `/<current>/build/<path>`, or `/<current>/override/<path>` when `o:<current>:<path>` exists
+
+#### Scenario: Apex host
+
+- **WHEN** a request arrives for the apex and the apex is not the canonical host
+- **THEN** the router returns a 301 to the canonical host with the same path and query string
+
+#### Scenario: Preview host
+
+- **WHEN** a request arrives for `pr-<N>.preview.<domain>`
+- **THEN** the router uses the `current:pr-<N>` pointer
+- **AND** returns 404 when that pointer does not exist
+
+#### Scenario: Unknown host or unsafe path
+
+- **WHEN** the host matches no rule (other than bare `preview.<domain>` and bare `release.<domain>`, which redirect), the preview label is not `pr-<N>`, or the decoded path is reserved (`/builds/`, `/data/`, `/<id>/build/`, `/<id>/override/` and the other reserved prefixes) or contains `.` or `..` segments, `\` or `%`
+- **THEN** the router returns 404
+
+#### Scenario: Retired prefix
+
+- **WHEN** the decoded path matches a pattern in `functions/redirect-prefixes.json`
+- **THEN** the router rewrites the request to `/<release-id>/build/<matched prefix>index.html` for the release that host serves
+
+#### Scenario: Redirect object
+
+- **WHEN** the object the router requests carries `x-amz-meta-redirect-location`
+- **THEN** the viewer-response function returns a 301 to that target with the query string kept
+- **AND** the response does not carry `x-amz-meta-redirect-location`
+
+### Requirement: Overrides stay with their release
+
+An override SHALL serve wherever its release is served: on a host whose pointer names the release, and on that release's release host. Promotion SHALL NOT copy overrides between releases.
+
+#### Scenario: New release promoted
+
+- **WHEN** a new release is promoted
+- **THEN** pages on the canonical host serve from its `build/` folder until the release API publishes overrides for it
+- **AND** the previous release's overrides no longer serve on the canonical host
+
+#### Scenario: Earlier release promoted again
+
+- **WHEN** an earlier release is promoted again
+- **THEN** its own overrides serve again
+
+### Requirement: Releases are kept and previews end with their PR
+
+Release folders in the production site bucket and their data in the production release data bucket SHALL never be deleted. When a PR closes, the system SHALL delete its `current:pr-<N>` pointer and, when no other preview pointer names the same release ID, its preview folder and preview release data. KVS keys for a removed preview SHALL be removed by hand.
+
+#### Scenario: PR closes
+
+- **WHEN** a PR closes and no other preview pointer names its release ID
+- **THEN** `current:pr-<N>`, `<release-id>/` in the preview site bucket and `builds/<release-id>/` in the preview release data bucket are deleted
+- **AND** its `o:` keys stay until removed with `npm run deploy:delete -- <release-id>`
+
+#### Scenario: Shared preview folder
+
+- **WHEN** a PR closes and another preview pointer names the same release ID
+- **THEN** only `current:pr-<N>` is deleted
+
+#### Scenario: Removing keys of a named release
+
+- **WHEN** `npm run deploy:delete -- <release-id>` runs and a preview pointer names that release
+- **THEN** it stops without deleting any key
+
+#### Scenario: Deleting a production release
+
+- **WHEN** an operator tries to delete a production release folder with the release tools
+- **THEN** no tool offers that operation
+
 ## ADDED Requirements
 
 ### Requirement: Release hosts serve a release by commit
@@ -90,6 +168,11 @@ After a production deploy promotes its release, it SHALL write that release's `r
 - **WHEN** `scripts/load-release-hosts.mjs` runs for releases whose keys are already correct
 - **THEN** it writes no key
 
+#### Scenario: Malformed release ID
+
+- **WHEN** `scripts/load-release-hosts.mjs` gets an argument that does not match `^[0-9a-f]{40}$`, such as `prod-temp` or `<commit>-1`
+- **THEN** the writer stops before changing any key
+
 #### Scenario: Incomplete release
 
 - **WHEN** `builds/<release-id>/build/release.json` or `<release-id>/build/index.html` is missing
@@ -127,24 +210,13 @@ The router SHALL answer every request for bare `preview.<domain>` and bare `rele
 
 ### Requirement: Production deploys write only production resources
 
-A production deploy SHALL upload to, promote in, and write keys to the production site bucket, release data bucket, KVS and distribution only. It SHALL NOT upload to the preview buckets or write any key in the preview KVS. The copies of production releases that earlier production deploys uploaded to the preview site bucket and the preview release data bucket SHALL be deleted once, after a dry run that lists every object to delete.
+A production deploy SHALL upload to, promote in, and write keys to the production site bucket, release data bucket, KVS and distribution only. It SHALL NOT upload to the preview buckets or write any key in the preview KVS.
 
 #### Scenario: Production deploy
 
 - **WHEN** `npm run deploy -- prod` runs
 - **THEN** no command writes to the preview site bucket, the preview release data bucket, or the preview KVS
 - **AND** the deploy does not require any `_PREVIEW` Terraform output
-
-#### Scenario: Mirror copies deleted from the preview buckets
-
-- **WHEN** the one-time cleanup has run
-- **THEN** neither preview bucket holds a folder whose name matches the release ID pattern and is also a folder in the production site bucket, unless a `current:<label>` key in the preview store names it
-- **AND** no object in a production bucket and no KVS key was changed
-
-#### Scenario: Cleanup dry run
-
-- **WHEN** the operator runs the cleanup
-- **THEN** a listing of every object to delete and an `aws s3 rm --dryrun` for each prefix run before any object is deleted
 
 ### Requirement: Each forms API accepts only its own environment's origins
 
@@ -187,7 +259,7 @@ The production forms API SHALL accept only `https` origins whose host is `police
 
 ### Requirement: Analytics and Sentry are off on release hosts
 
-On a page whose host ends with `.release.policeconduct.org`, the browser SHALL NOT load Google Analytics, SHALL NOT send any analytics event, SHALL NOT call `Sentry.init`, and SHALL NOT set `window.__IPC_SENTRY_FEEDBACK__`. The choice SHALL be made from the page host at runtime. The apex, `www`, preview hosts and local builds SHALL keep their current analytics and Sentry behavior.
+On a page whose host ends with `.release.policeconduct.org`, served from a release built from a commit that contains this change, the browser SHALL NOT load Google Analytics, SHALL NOT send any analytics event, SHALL NOT call `Sentry.init`, and SHALL NOT set `window.__IPC_SENTRY_FEEDBACK__`. The choice SHALL be made from the page host at runtime. The apex, `www`, preview hosts and local builds SHALL keep their current analytics and Sentry behavior.
 
 #### Scenario: Analytics on a release host
 

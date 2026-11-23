@@ -16,12 +16,12 @@
   - `aws_cloudwatch_metric_alarm.canary_delivery` (`policeconduct-notification-canary-delivery-failed`)
   - `aws_cloudwatch_metric_alarm.submissions_without_notification` (`policeconduct-submissions-without-notification`)
   - `aws_cloudwatch_log_metric_filter.notify["publish_failed"]`, `["topic_not_configured"]`, `["nobody_told"]`
-  - `aws_cloudwatch_metric_alarm.notify["publish_failed"]`, `["topic_not_configured"]`, `["nobody_told"]` (`policeconduct-forms-api-prod-notify-*`)
+  - `aws_cloudwatch_metric_alarm.notify["publish_failed"]`, `["topic_not_configured"]`, `["nobody_told"]` (`policeconduct-forms-api-prod-notify-*`; these AWS names now belong to the kept bootstrap `forms_api_prod_notify_failed` resources, so these six are checked by state only)
 
 ## After merge
 
-- 2026-11-18, `ddl-openspec` head `1c1bb48`: `terraform plan` for `infrastructure/submission-notifications` shows 0 to add, 2 to change (tags, and a topic policy refresh with unchanged statements), 0 to destroy. None of the 16 addresses above are in state. The owner applied it the same day.
-- 2026-11-18: the owner applied `infrastructure/bootstrap-policeconduct`. That apply still kept the probe's log group; tasks.md section 3 removes it.
+- 2026-11-18, `ddl-openspec` head `1c1bb48`: `terraform plan` for `infrastructure/submission-notifications` shows 0 to add, 2 to change (tags, and a topic policy refresh with unchanged statements), 0 to destroy. None of the 16 addresses above are in state. The owner applied it the same day from that plan; the plan was made at `1c1bb48`, and no other commit for the apply is recorded.
+- 2026-11-18: the owner applied `infrastructure/bootstrap-policeconduct`. That apply still kept the probe's log group; tasks.md section 2 removes it from `logs.tf` and section 3 applies that removal.
 - 2026-11-18, head `1c1bb48`: `node --test` in `infrastructure/bootstrap-policeconduct/lambdas/forms-api/`: 48 tests, 48 pass, 0 skipped.
 
 ## Pending

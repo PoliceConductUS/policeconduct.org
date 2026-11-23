@@ -2,7 +2,7 @@
 
 ### Requirement: Roster filters cover every page of a paged roster
 
-For an agency roster of more than 50 rows, the name search, status facets, "With discipline actions" checkbox, result summary, empty state and A–Z jump SHALL apply to every person on the roster, not only to the rows of the current page. While any filter is active, results SHALL show 50 per view with Previous and Next controls. Clearing every filter SHALL restore the server-rendered page. The filtered view SHALL follow the local-pager rules of `authority-discipline-browsing`.
+For an agency roster of more than 50 rows, the name search, "With discipline actions" checkbox, result summary, empty state and A–Z jump SHALL apply to every row on the roster, not only to the rows of the current page. While any filter is active, results SHALL show 50 per view with Previous and Next controls. Clearing every filter SHALL restore the server-rendered page.
 
 #### Scenario: Roster page routes exist for later pages
 
@@ -10,26 +10,26 @@ For an agency roster of more than 50 rows, the name search, status facets, "With
 - **THEN** `<agency>/personnel/` lists rows 1-50 with a pager
 - **AND** `<agency>/personnel/page/{n}/` exists for every later page
 
-#### Scenario: Summary shows whole-roster totals on every page
+#### Scenario: Summary shows whole-roster staff counts on every page
 
 - **WHEN** a visitor opens any page of a paged roster with no filter active
-- **THEN** the summary shows the personnel, current, former and uncertain totals for the whole roster
+- **THEN** the summary shows the agency's staff counts as stored in the intake view `site_agency_count`, the same on every page
 
 #### Scenario: An A–Z letter links to the page where it starts
 
 - **WHEN** no filter is active and a visitor picks a letter whose first row is on a later page
 - **THEN** the link opens that page at the anchor for that letter group
 
-#### Scenario: A filter matches people on a later roster page
+#### Scenario: A filter matches rows on a later roster page
 
-- **WHEN** a visitor on page 1 of a roster of more than 50 people searches for a name that appears only on a later page
-- **THEN** that person appears in the results
+- **WHEN** a visitor on page 1 of a roster of more than 50 rows searches for a name that appears only on a later page
+- **THEN** that row appears in the results
 - **AND** the summary counts matches across the whole roster
 
 #### Scenario: Filters combine
 
-- **WHEN** discipline-only, current status and a name search are selected
-- **THEN** the results contain only people matching all three criteria
+- **WHEN** discipline-only and a name search are selected
+- **THEN** the results contain only rows matching both
 
 #### Scenario: A–Z while filtering moves the view
 
@@ -61,17 +61,32 @@ For an agency roster of more than 50 rows, the name search, status facets, "With
 - **AND** the page keeps its server-rendered rows
 - **AND** the page never shows one page's rows as whole-roster results
 
+#### Scenario: Roster data file is from a newer build
+
+- **WHEN** the roster data file's data version differs from the page's data version
+- **THEN** the summary asks the visitor to reload the page to see the full roster
+- **AND** the page keeps its server-rendered rows
+
 #### Scenario: A filtered row matches the server row
 
-- **WHEN** a person appears in filtered results
-- **THEN** the result row shows the same label, link, status, context line and discipline counts as that person's server-rendered row
+- **WHEN** a row appears in filtered results
+- **THEN** the result row shows the same label, link, context line and discipline count as that row's server-rendered version
+
+### Requirement: Filtered roster view controls
+
+The filtered roster view SHALL use buttons named "Previous results" and "Next results", disabled at the first and last view. After each, focus SHALL move to the "Matching personnel" heading, and one polite live region SHALL announce the range and total. The view SHALL return to the first view when a filter changes.
 
 #### Scenario: Filtered view controls follow the local-pager rules
 
 - **WHEN** a visitor uses Previous results, Next results or an A–Z letter in the filtered view
-- **THEN** focus moves to the results heading
+- **THEN** focus moves to the "Matching personnel" heading
 - **AND** the one polite live summary announces the range and total
 - **AND** Previous results is disabled on the first view and Next results on the last view
+
+#### Scenario: Changing a filter returns to the first view
+
+- **WHEN** a visitor is on a later filtered view and changes a filter
+- **THEN** the filtered view shows its first 50 results
 
 ### Requirement: Small rosters stay one page
 
@@ -85,10 +100,10 @@ Rosters of 50 or fewer rows SHALL render as one page, filter their rendered rows
 
 ### Requirement: Roster pages are not in the site search index
 
-Every agency roster page, including `<agency>/personnel/page/{n}/`, SHALL be left out of the site search index. Other agency topic pages SHALL keep their current search index setting.
+Every agency roster page, including `<agency>/personnel/page/{n}/` and `/federal/{slug}/personnel/`, SHALL be left out of the site search index. Other agency topic pages SHALL keep their current search index setting.
 
 #### Scenario: A roster page is built
 
-- **WHEN** the build renders any agency roster page
+- **WHEN** the build renders any agency roster page or `/federal/{slug}/personnel/`
 - **THEN** the page has no `data-pagefind-body` marker
 - **AND** the site search returns no roster page

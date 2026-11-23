@@ -4,9 +4,14 @@
 
 - **Preview**: a build of an open PR, served at `pr-<N>.preview.<domain>`. Not a release.
 - **Release**: a published build of a commit on `main`, stored as a folder in the production site bucket. Not every `main` commit is released.
-- **Promote**: move the `current` pointer so `www` and the apex serve a chosen release.
-- **Release data bucket**: the private bucket that holds `builds/<release-id>/build/` (build-owned: the completion marker `release.json` and any build artifacts for the daily job) and `builds/<release-id>/data/` (daily job only).
+- **Promote**: move the `current` pointer so `www` and the apex serve a chosen release. A preview deploy does not promote; it points `current:pr-<N>` at its build with the same steps.
+- **Release ID**: the folder name of any uploaded build, preview or release: its full 40-character commit. The name comes from the code (`.release/id`, `RELEASE_ID`); a preview's release ID does not make it a release.
+- **Release data bucket**: the private bucket that holds `builds/<release-id>/build/` (build-owned: the completion marker `release.json` and any build artifacts for the daily job) and `builds/<release-id>/data/` (daily job only). There is one per distribution; the preview one holds only preview builds' files.
 - **Override**: a page the release API publishes into `<release-id>/override/` after the release is promoted.
+- **Release API**: the `release_api` Lambda (`infrastructure/bootstrap-policeconduct/lambdas/release-api/`, defined in `release.tf`), with operations `release-snapshot` and `publish-page`. The daily job calls it.
+- **Intake**: the separate data-import application that loads the site's database. The **daily job** is intake's daily news job (`.github/workflows/discover-news.yml` in the intake repository). It writes `builds/<release-id>/data/` and publishes overrides through the release API.
+
+These terms are the owner's (Terms, `.egm-reviews/owner-decisions-round1.md`).
 
 ## Current deploy model (baseline, shipped)
 
@@ -18,13 +23,13 @@ This change starts from the deploy model already in the repository:
 - Pointers: `current` (production), `current:main` (bare `preview.<domain>`), `current:<label>` (`<label>.preview.<domain>`). A production deploy also uploads the release to the preview bucket and points `current:main` at it.
 - Two CloudFront distributions (`site`, `preview`), each with its own site bucket, release data bucket and KVS (`site_redirects`, `preview_redirects`). Both run the same router source (`infrastructure/bootstrap-policeconduct/functions/router.js`, rendered by `local.shared_router_code` in `infrastructure/bootstrap-policeconduct/main.tf`). The preview distribution also runs `functions/noindex.js` on viewer-response.
 - The release API writes `<release-id>/override/*` objects and `o:<release-id>:<path>` keys; the router serves the override when its key exists for the promoted release.
-- Every `npm run deploy -- <environment>` promotes the build it uploads. There is no approval gate and no separate promote step. Production deploys run from `main` after the PR merges. Promoting an earlier release uses `npm run deploy:promote -- <release-id>`.
+- `npm run deploy -- prod` promotes the release it uploads; a preview deploy points `current:pr-<N>` at its build with the same steps. There is no approval gate (owner Terms, `.egm-reviews/owner-decisions-round1.md`) and no separate promote step. Production deploys run from `main` after the PR merges. Promoting an earlier release uses `npm run deploy:promote -- <release-id>`.
 
 Router behavior is tested in `scripts/cloudfront-router.test.mjs`; deploy ordering in `scripts/deploy-release-guard.test.mjs`.
 
-A build folder `<release-id>/build/` changes only when the same commit is rebuilt and uploaded again (see Rebuilding a commit). `<release-id>/override/` and `o:<release-id>:` keys are a per-release overlay that the release API changes after promotion. Promotion invalidates `/*` because the error page and overrides change outside the cache key. Known limitation: each bucket has one root `404.html`, so in the preview bucket the most recently promoted label sets the error page for every preview host.
+A build folder `<release-id>/build/` changes only when the same commit is rebuilt and uploaded again (see Rebuilding a commit). After promotion, two things change a release outside a deploy: the release API writes `<release-id>/override/` objects and `o:<release-id>:` keys (a per-release overlay), and the daily job writes `builds/<release-id>/data/` in the production release data bucket (through the `intake_news` role in `infrastructure/bootstrap-policeconduct/release.tf`). Promotion invalidates `/*` because the error page and overrides change outside the cache key. Known limitation: each bucket has one root `404.html`, so in the preview bucket the most recently promoted label sets the error page for every preview host.
 
-The bare `preview.<domain>` host and the `current:main` mirror are baseline behavior. The release-hosts proposal (PR #58) replaces them with `<commit>.release.<domain>` hosts and redirects bare `preview.` and `release.` to `www`. This change does not specify release hosts.
+The bare `preview.<domain>` host and the `current:main` mirror are baseline behavior. `openspec/changes/release-hosts/` (PR #58) sits above this change in the stack, so it lands and archives after this one. It replaces the bare host with a redirect to `www`, adds `<commit>.release.<domain>` hosts, and stops production deploys from writing preview resources. When it lands, these statements here no longer hold: the "Bare preview host", "Production deploy mirrors to bare preview" and "Only a main build selects `current:main`" scenarios, the mirror sentences in Lifecycle, and the "Preview store failure" and "Partial deploy" risks. `release-hosts` must state them as MODIFIED or REMOVED requirements of `deploy-hosting`. Both changes edit `router.js`, `scripts/deploy.sh` and `scripts/upload-release.sh`; `release-hosts` rebases on this change's edits. This change does not specify release hosts.
 
 ## Goals
 
@@ -77,29 +82,40 @@ Owner decision, 2026-11-22: a rebuild of a commit cannot and will not overwrite 
 
 ## Data version
 
-Owner decision, 2026-11-22. The data version of a build is the `version` of the last applied entry in intake's data-mutation ledger, `public.data_mutation_applied`. Values look like `000015`. Intake does not change; the build reads what is already there.
+Owner decision, 2026-11-20 to 2026-11-22 ("Later decisions", `.egm-reviews/owner-decisions-round1.md`): the data version of a build is the `version` of the newest row in intake's data-mutation ledger, `public.data_mutation_applied`. Values look like `000015`. Intake does not change; the build reads what is already there.
 
-- The ledger is a chain: each row's `previous_version` names the row before it. The last entry is the one row whose `version` no other row names as `previous_version`.
-- `src/lib/data-version.js` reads the rows with `SELECT version, previous_version FROM public.data_mutation_applied` and passes them to `headVersion(rows)`. `headVersion` returns the `version` of the one row that no row names as `previous_version`.
-- Exactly one such row is expected. Zero rows (including an empty ledger) or more than one row stops the build with an error. A missing table stops the build through the query error. There is no fallback value.
-- The build reads the data version once. `scripts/build-release.mjs` reads it before `npm run build:site`, writes it to `.release/source.json` as `dataVersion`, and passes it to the site build as `DATA_VERSION`, the same way it passes `RELEASE_ID`. `src/lib/data-version.js` uses `DATA_VERSION` when it is set and reads the ledger only when it is not (a plain `npm run build`).
-- `src/layouts/SiteLayout.astro` renders `data-data-version="<version>"` on `<html>`, next to `data-release-id`. Every built page carries both.
+- The newest row is the chain head. Intake's ledger (`supabase/migrations/20260905000000_data_mutation_ledger.sql` in the intake repository, ADR 0033) gives each row a `previous_version` that references its parent's `version`, with `unique (previous_version)`, and applies an entry only after its parent is in the ledger. So the one row whose `version` no row names as `previous_version` is the newest row applied.
+- `src/lib/data-version.js` exports two functions. `headVersion(rows)` is pure: it returns the `version` of the one row that no row names as `previous_version`, and throws on zero or more than one. `readDataVersion()` is async: it imports `./db.js` dynamically, runs `SELECT version, previous_version FROM public.data_mutation_applied`, and returns `headVersion(rows)`. Importing the module opens no connection (`src/lib/db.js` builds its pool at import and loads `.env`).
+- Exactly one head is expected. Zero rows (including an empty ledger) or more than one head stops the build with an error. A missing table stops the build through the query error. There is no fallback value. `scripts/validate-schema-contract.mjs` lists the table in `requiredTables`.
+- The build reads the data version once. `scripts/build-release.mjs` always calls `readDataVersion()` before `npm run build:site` and ignores any inherited `DATA_VERSION` (for example from `.env`). It writes the value to `.release/source.json` and `.release/build/release.json` as `dataVersion`, and passes it to the site build as `DATA_VERSION`, the same way it passes `RELEASE_ID`.
+- `src/layouts/SiteLayout.astro` uses `process.env.DATA_VERSION` when set, and otherwise awaits `readDataVersion()` once per build process (memoized at module level). That covers `npm run build:site`, `npm run dev` and the e2e dev server. `npm run dev` and `npm run test:e2e` therefore need a local `public.data_mutation_applied` with one chain head; the shared local database loaded by intake has one.
+- `SiteLayout.astro` renders `data-data-version="<version>"` on `<html>`, next to `data-release-id`. Every built page carries both.
 - The version is read at build time. It is never written into code or config.
-- Intake restarts the ledger chain when it resets the chain, so the same version can name different data at different times. A data version identifies data only together with the time of the build. The owner accepted this for simplicity.
+- A database reset empties the ledger and replays the same chain (ADR 0033), so the head returns to the same version for the same data. If intake starts a new chain lineage (intake ADR 0034: the chain and the intake cache are one lineage), a version can name different data than before. A data version then identifies data only together with the build time. The owner accepted this for simplicity.
 
 ## Previews are PR builds only
 
-`scripts/deploy.sh` requires `PR_NUMBER` for every environment other than `prod` and drops `PREVIEW_NAME`. The router serves `<label>.preview.<domain>` only when the label matches `^pr-[1-9][0-9]*$`; any other label returns 404.
+`scripts/deploy.sh` requires `PR_NUMBER` matching `^[1-9][0-9]*$` for every environment other than `prod` (checked in `deploy.sh`, so it also applies with `--skip-build`) and drops `PREVIEW_NAME`. The router serves `<label>.preview.<domain>` only when the label matches `^pr-[1-9][0-9]*$`; any other label returns 404.
 
 ## Overrides stay with their release
 
-The router looks up `o:<release-id>:<path>` for the promoted release only. A new release starts with no overrides; its build renders the same content from data, and the release API publishes new overrides to it. Promoting an earlier release serves that release's own overrides. Promotion does not copy overrides between releases.
+The router looks up `o:<release-id>:<path>` for the promoted release only. A new release starts with no overrides; its build renders the same content from data, and the release API publishes new overrides to it. Promoting an earlier release serves that release's own overrides. Promotion does not copy overrides between releases (owner decision Q6, `.egm-reviews/owner-decisions-round1.md`).
+
+A rebuild of the same commit keeps that release's overrides. Each override keeps the `data-data-version` of the build it was rendered from until the daily job publishes that page again from the rebuilt original (owner, 2026-11-20 to 2026-11-22: override pages keep their release's data version).
 
 ## Lifecycle
 
-- Release folders in the production site bucket and their release data (`builds/<release-id>/build/` and `builds/<release-id>/data/`) are kept forever. `scripts/manage-release.mjs` no longer deletes a production release folder.
-- When a PR closes, `scripts/cleanup-preview.mjs` deletes `current:pr-<N>` from the preview store. Then, if no other preview pointer names that release ID, it deletes `<release-id>/` from the preview site bucket and `builds/<release-id>/` from the preview release data bucket. The daily job publishes only to production, so this deletes no daily output. A preview folder that a production release also uploaded (the `current:main` mirror) is kept while any pointer names it.
+- Release folders in the production site bucket and their production release data (`builds/<release-id>/build/` and `builds/<release-id>/data/`) are kept forever (owner decision Q7, `.egm-reviews/owner-decisions-round1.md`). `scripts/manage-release.mjs` no longer deletes a production release folder.
+- When a PR closes, `scripts/cleanup-preview.mjs` deletes `current:pr-<N>` from the preview store. Then it lists every key starting with `current` in the preview store and deletes every folder in the preview site bucket, and every `builds/<release-id>/` in the preview release data bucket, whose release ID no remaining pointer names (owner decision, 2026-11-22). This removes the closed PR's folder, the folders of its earlier pushes, and superseded `current:main` mirror copies. The folder `current:main` names is kept. Mirror copies stop when `openspec/changes/release-hosts/` stops the mirror and deletes its copies once. The daily job publishes only to production, so this deletes no daily output. The sweep holds no state, so a failed delete is retried by rerunning the cleanup.
+- `.github/workflows/cleanup-preview.yml` runs as the `github_actions` role. Task 4.1 grants it `s3:ListBucket` on the preview release data bucket and `s3:GetObject` and `s3:DeleteObject` on its `builds/*`, and nothing on the production release data bucket. Terraform exports the bucket name to the `preview` GitHub environment as `RELEASE_DATA_BUCKET_PREVIEW`, like `KVS_ARN_PREVIEW`.
 - KVS keys are removed by hand. `npm run deploy:delete -- <release-id>` removes `o:<release-id>:` keys from the preview store, and refuses when any preview pointer names the release.
+- Preview pointers from before this change that are neither `current:main` nor `current:pr-<N>` return 404 after the router change. Task 4.4 deletes them once, so the sweep can remove their folders.
+
+## Route absence accounting
+
+The coverage checker reads the required repository-root `route-absences.json` array of `{ path, reason }` entries. Exact paths only; no wildcard exemptions. Existing routes and redirects take precedence; otherwise a listed missing route counts as an accounted-for 404. The list does not generate content or change HTTP routing. Missing or malformed lists fail validation. An intake gap (a prior URL whose record intake has not loaded yet) has no assumed end date and does not imply retirement. See `docs/route-coverage.md`.
+
+`PRIOR_SITEMAP=skip` bypasses the check for a first deploy (`scripts/verify-redirect-coverage.mjs`).
 
 ## Redirect files
 
@@ -212,7 +228,10 @@ After merge, the Terraform apply publishes the router without `r:` reads. The re
 
 - One distribution vs two: two kept. Previews need their own certificate, bucket, KVS and `noindex` header.
 - Pointer promotion vs overwriting the bucket root: pointer kept. Rolling back is promoting an earlier release.
-- A new folder per rebuild (a version or data version in the release ID) vs the same folder: same folder chosen (owner decision). The release ID stays the commit, and the build records the data version it read.
+- A new folder per rebuild (a version or data version in the release ID) vs the same folder: same folder chosen (owner decision Q4, corrected 2026-11-20, `.egm-reviews/owner-decisions-round1.md`). A folder per rebuild would give an atomic switch and keep the earlier build for rollback. It would change the release-ID contract in `scripts/build-release.mjs`, `scripts/release-files.mjs`, the Forms API release check and `<commit>.release` hosts. The same folder keeps the release ID equal to the commit, and the build records the data version it read.
+- Upload to a staging prefix, then switch: not chosen. The switch would need a second pointer per release, or a copy of the whole folder (about 7.6 GB per build), and Q4 keeps one folder per commit.
+- Newest row by `applied_at` vs the chain head: chain head chosen. `applied_at` defaults to the transaction start time (`now()`), so entries applied in one transaction share a timestamp. The chain is the order intake enforces.
+- Preview cleanup that deletes only the closed PR's last folder, or deletes the previous folder each time a pointer moves: not chosen. The owner chose a sweep at PR close of every preview folder no pointer names (2026-11-22).
 - Copying overrides on promotion: not done. Each release renders its own content from data.
 - Redirects in the KVS (`r:` keys) vs redirect files: files chosen (owner decision, 2026-11-22). One release's keys fill most of the 5 MB store.
 - Astro `redirects` vs redirect files: Astro writes meta-refresh pages with status 200, not 301.
@@ -229,10 +248,11 @@ After merge, the Terraform apply publishes the router without `r:` reads. The re
 - Redirect cutover gap: between the Terraform apply and the next production deploy, the promoted release serves no redirects. Run the deploy right after the apply.
 - Redirect upload time: about 25,668 `put-object` calls, 16 at a time, run on every deploy. A failed put stops the deploy before `release.json`; rerun with `--skip-build`.
 - Redirect gap on a rebuild: the `dist/` sync removes a served commit's redirect objects before the uploader puts them back. Requests in that window get 404. This is part of the rebuild risk above.
+- Completion marker on a rebuild: `release.json` from the earlier build stays in place until the rebuild's last step. An interrupted rebuild leaves a folder that mixes both builds and still passes the `promote.sh` marker check, so `npm run deploy:promote` would accept it. The marker is not deleted first, because the Forms API release check and `release-hosts` read it while the folder serves. Accepted (the owner accepts breakage that is fixed later). Recovery: rerun `npm run deploy -- <environment> --skip-build` with the same build.
+- A rebuild replaces the earlier build of that commit. Nothing keeps the earlier build. If a rebuild of the live commit uses bad data, rollback means promoting an earlier release (older code) or rebuilding the commit again after the data is fixed.
+- Data changing during a build: the data version is read once, before `npm run build:site`. If intake applies a data mutation to the shared local database while the build runs, some pages reflect newer data than the recorded version. AGENTS.md "Database Expectations" forbids loading data into a database that has a rebuild in progress. Pause intake for the build.
+- Shared preview folder: two PRs at the same commit, or a PR and the `current:main` mirror, use the same folder in the preview site bucket. Their builds differ in `SITE_URL` and Sentry settings (`scripts/deploy.sh`). The last deploy replaces the folder, so the other label then serves pages built for a different host. Accepted. Redeploy the label that needs its own build.
+- Cleanup race: the sweep at PR close deletes every preview folder no pointer names at that moment. A preview deploy whose upload is in progress, and whose pointer has not moved yet, loses its folder. Accepted (owner, 2026-11-22). Rerun that deploy.
+- CI gains delete rights on preview release data: the `github_actions` role can delete `builds/*` in the preview release data bucket. It gets no right on the production release data bucket.
+- Storage: one build is about 7.6 GB of site files (local build, 2026-11-15, 188,094 files in `dist/`). A rebuild re-uploads every file, because a fresh build changes every file's modification time, and that leaves a full set of noncurrent versions in the versioned buckets. In the preview buckets, noncurrent versions expire after 7 days (INS-106; `aws_s3_bucket_lifecycle_configuration.preview` in `main.tf`, and the new rule for the preview release data bucket in task 4.1). The production site and release data buckets have no expiry rule, so each production rebuild adds about 7.6 GB of noncurrent versions that stay billed. This change does not add a production rule.
 - Prefix list drift: a new `/*` entry in the generator needs a new pattern in `redirect-prefixes.json`. The writer stops when a `/*` source matches no pattern, so drift fails the build.
-
-## Route absence accounting
-
-The coverage checker reads the required repository-root `route-absences.json` array of `{ path, reason }` entries. Exact paths only; no wildcard exemptions. Existing routes and redirects take precedence; otherwise a listed missing route counts as an accounted-for 404. The list does not generate content or change HTTP routing. Missing or malformed lists fail validation. An intake gap (a prior URL whose record intake has not loaded yet) has no assumed end date and does not imply retirement. See `docs/route-coverage.md`.
-
-`PRIOR_SITEMAP=skip` bypasses the check for a first deploy (`scripts/verify-redirect-coverage.mjs`).

@@ -11,7 +11,7 @@ Fill in each row at the final head (task 7.9). The sections below record earlier
 
 ## Deployment folders (6.1, 6.2)
 
-At the final head, run `node --test scripts/deploy-release-guard.test.mjs scripts/manage-release.test.mjs scripts/cloudfront-router.test.mjs`. Record the counts for clean-repo rejection, the full-commit folder, main-only site upload, `current:main` selection, invalidation on promotion and refusal to delete the live folder. Not yet recorded.
+At the final head, run `node --test scripts/deploy-release-guard.test.mjs scripts/manage-release.test.mjs scripts/cloudfront-router.test.mjs`. Record the counts for clean-repo rejection, the full-commit folder, main-only site upload, `current:main` selection, invalidation on promotion and promotion of an explicit folder. Not yet recorded.
 
 ## Website
 
@@ -46,9 +46,9 @@ A clean install on Node 24.21.0 matched all 394 installed dependency versions to
 
 ## Rollout and archive
 
-Task 4.2 remains open. Its checklist in tasks.md (API/router agreement, private-path 404s on both hosts, cache refresh of an original and an override, form `releaseId`) runs after 6.4. Enable the Intake schedule after these checks. Local tests do not exercise actual publisher access, production credentials, IAM or CloudFront propagation.
+Task 4.2 remains open. Its checklist in tasks.md (API/router agreement, private-path 404s on the production, release and PR preview hosts, cache refresh of an original and an override, form `releaseId`, `dataVersion` and Forms API version) runs after 6.4. Enable the Intake schedule after these checks. Local tests do not exercise actual publisher access, production credentials, IAM or CloudFront propagation.
 
-The release-page-updates delta remains in the active change pending rollout. The implementation has local validation evidence. No remote CI run or production deployment was requested or performed.
+The release-page-updates delta remains in the active change pending rollout. The implementation has local validation evidence. No production deployment was performed for this verification. The 2026-11-18 `bootstrap-policeconduct` apply from `main` is recorded in design.md "Production cutover status".
 
 ## Publisher URL aliases
 
